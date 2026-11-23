@@ -560,6 +560,7 @@ class _SpellSystemStatesStub:
             *,
             resolvable: object = None,
             binding_key: object = None,
+            late_bind_thread_id: object = None,
     ) -> None:
         """
         Purpose:
@@ -571,10 +572,22 @@ class _SpellSystemStatesStub:
             owner_spellbook_id: Owning Spellbook id (ignored here).
             resolvable: The registered version's capability, as bind passes it (ignored here).
             binding_key: The registered version's binding key, as bind passes it (ignored here).
+            late_bind_thread_id: The binding thread's id for a bind after conjure (#330), as bind passes it
+                (ignored here).
         Returns:
             None.
         """
         self.registered_lineages.append((spell_index, spell_index.selected_spell_id))
+
+    def clear_late_bind_marks(self, spell_ids: object) -> None:
+        """
+        Purpose:
+            Accept the end of a bind window (#330): this stub records no late-bind marks, so there is nothing to clear.
+        Args:
+            spell_ids: The spell ids the window marked (ignored here).
+        Returns:
+            None.
+        """
 
     def update_dependencies(self, spell_index: object, dependency_spell_ids: list[str]) -> None:
         """

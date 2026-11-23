@@ -41,6 +41,7 @@ from melder.aether.aetheric_frame.dev_ops.devops_information_registry import (
 )
 from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_state_change_reason import SpellStateChangeReason
 from melder.aether.spellbook.spell_compiler.phases.compiler_phase_3 import CompilerPhase3
+from melder.utilities.custom_exceptions.spellbook_validation_error import SpellbookValidationError
 from melder.utilities.general_base.cleanable import Cleanable
 
 if TYPE_CHECKING:
@@ -50,6 +51,7 @@ if TYPE_CHECKING:
         RootResolutionBlueprint,
     )
     from melder.aether.spellbook.bind.spell_index import SpellIndex
+    from melder.aether.spellbook.spell import Spell
     from melder.aether.aetheric_frame.dev_ops.change_control_manager.orchestrator.staged_mutation import (
         ChangeControlStagedMutation,
     )
@@ -146,6 +148,7 @@ class ChangeControlManager(Cleanable):
         "_structural_validator",
         "_dirty_marker",
         "_devops_information_registry",
+        "_refused_bind_requests",
     ]
 
     def __init__(
@@ -238,11 +241,16 @@ class ChangeControlManager(Cleanable):
         self._abort_hook: Optional[Callable[[ChangeControlStagedMutation], None]] = None
         self._structural_validator: Optional[Callable[[ChangeControlStagedMutation], None]] = None
         self._dirty_marker: Optional[Callable[[ChangeControlStagedMutation], None]] = None
+        # Bind requests whose structural validator refused, by request id, each with the refusal (#330): written by
+        # `_dispatch_commit_validator` before the refusal propagates, popped by `_default_abort_hook`, which the
+        # orchestrator calls next on the same thread with the request's claims still held.
+        self._refused_bind_requests: Dict[str, BaseException] = {}
         self._orchestrator.set_commit_validator(self._dispatch_commit_validator)
         self._orchestrator.set_commit_hook(self._dispatch_commit_hook)
         self._orchestrator.set_abort_hook(self._dispatch_abort_hook)
         self.set_structural_validator(self._default_structural_validator)
         self.set_dirty_marker(self._default_dirty_marker)
+        self.set_abort_hook(self._default_abort_hook)
     # ----------------------------------------------------------------------
     # Cleanup
     # ----------------------------------------------------------------------
@@ -312,6 +320,8 @@ class ChangeControlManager(Cleanable):
             if self._orchestrator is not None:
                 self._orchestrator.cleanup()
 
+            self._refused_bind_requests.clear()
+
             del self._pending_changes
             del self._component_of_by_conduit
             del self._dirty_spells_by_conduit
@@ -327,6 +337,7 @@ class ChangeControlManager(Cleanable):
             del self._commit_validator
             del self._commit_hook
             del self._abort_hook
+            del self._refused_bind_requests
             del self._structural_validator
             del self._dirty_marker
             del self._devops_information_registry
@@ -572,17 +583,33 @@ class ChangeControlManager(Cleanable):
         executed outside the lock so validator code cannot deadlock this
         manager's internal state.
 
+        A bind request the structural validator refuses is remembered with its
+        refusal before the refusal propagates (#330, 2026-11-23): the
+        orchestrator then calls the abort hook on the same thread, with the
+        request's claims still held, and `_default_abort_hook` has the
+        Spellbook unwind that request's window. Only the structural validator's
+        refusal of a bind is remembered; any other failure unwinds nothing.
+
         Args:
             staged: Staged mutation metadata to validate.
+
+        Raises:
+            Exception: Whatever a validator raises, unchanged.
         """
-        
+
         validator: Optional[Callable[[ChangeControlStagedMutation], None]] = None
         structural: Optional[Callable[[ChangeControlStagedMutation], None]] = None
         with self._lock:
             validator = self._commit_validator
             structural = self._structural_validator
         if structural is not None:
-            structural(staged)
+            try:
+                structural(staged)
+            except Exception as refusal:
+                if ChangeTransactionType._comparison_token(staged.request_type) == "bind":
+                    with self._lock:
+                        self._refused_bind_requests[staged.request_id] = refusal
+                raise
         if validator is not None:
             validator(staged)
 
@@ -640,6 +667,51 @@ class ChangeControlManager(Cleanable):
             hook = self._abort_hook
         if hook is not None:
             hook(staged)
+
+    def _default_abort_hook(self, staged: ChangeControlStagedMutation) -> None:
+        """
+        Default abort hook: unwind a bind window whose commit the structural validator refused.
+
+        Purpose:
+            A late bind registers its spell everywhere before its commit compiles it, so a refused commit used to
+            leave the spell registered - the caller told the bind failed, and a retry colliding on its spell id
+            (#330). The owner decided (2026-11-22) that the bind's transaction unwinds inside the mediator's scope,
+            in this abort slot: the orchestrator runs it on the committing thread, before it releases the request's
+            claims, so no other admitted operation touches the Book while it is undone.
+
+        Contract:
+            - Acts only for a request `_dispatch_commit_validator` remembered: a bind request its structural
+              validator refused. It pops that record; every other request - an in-window abort, a refused notch, a
+              failing dirty marker or general hook - returns at once, so an in-window abort keeps today's contract
+              (its spells stay).
+            - Resolves the Spellbook from the staged mutation as the structural validator does
+              (`_resolve_spellbook_for_staged`) and has it undo the window
+              (`Spellbook._unwind_refused_bind_window(refusal)`), which never raises and notes what it did on the
+              refusal. When no Spellbook resolves, a note on the refusal says the window could not be undone.
+            - The orchestrator re-raises the refusal after this hook.
+
+        Args:
+            staged: The refused request's staged mutation.
+
+        Returns:
+            None.
+
+        Threading:
+            Takes the manager lock only to pop the record; the unwind runs outside it. Runs inside the
+            orchestrator's commit-failure path, outside its lock.
+        """
+        with self._lock:
+            refusal = self._refused_bind_requests.pop(staged.request_id, None)
+        if refusal is None:
+            return
+        spellbook = self._resolve_spellbook_for_staged(staged)
+        if spellbook is None:
+            refusal.add_note(
+                "The refused bind window could not be undone: its Spellbook could not be resolved from the "
+                "transaction, so the spells it registered may still be registered."
+            )
+            return
+        spellbook._unwind_refused_bind_window(refusal)
 
     def _resolve_frame(self) -> Optional[Any]:
         """
@@ -802,12 +874,24 @@ class ChangeControlManager(Cleanable):
           itself, inside the held window, and refuses the notch with nothing
           moved when it fails, so a notched member that reaches this validator
           has been checked or compiled already and is skipped (2026-10-19)
+        - for a bind, a staged spell that already has a Phase-4 result is
+          checked, not skipped: when that result is broken the bind is refused
+          with SpellbookValidationError naming it, after the uncompiled staged
+          spells have run (#330, 2026-11-23). Only the binding thread can
+          compile a staged late bind inside its window - another thread's meld
+          of it is refused - and that meld must not let the window commit a
+          broken spell.
 
         Execution stays spellbook-owned: this hook only resolves the staged
         keys and delegates to the owning Spellbook's own phase runner.
 
         Any structural-phase exception is allowed to propagate so the commit
         path can fail loudly instead of accepting a broken staged mutation.
+
+        Raises:
+            SpellbookValidationError: When a staged spell's Phases 1-4 break, or
+                a staged bind spell was already compiled broken.
+            Exception: Other structural-phase failures, unchanged.
         """
         
         if ChangeTransactionType._comparison_token(staged.request_type) not in (
@@ -825,6 +909,7 @@ class ChangeControlManager(Cleanable):
         if not spells:
             return
         pending = [spell for spell in spells if spell.validation_result_phase4 is None]
+        already_broken: list[Spell] = []
         if staged.request_type is ChangeTransactionType.NOTCH:
             # See Contract: only never-compiled members run phases 1-4 at a
             # notch commit; already-compiled members keep their live artifacts
@@ -834,9 +919,17 @@ class ChangeControlManager(Cleanable):
                 for spell in pending
                 if spell._compiler_artifact._root_blueprint_phase5 is None
             ]
-        if not pending:
-            return
-        spellbook._run_post_conjure_structural_phases(pending)
+        elif ChangeTransactionType._comparison_token(staged.request_type) == "bind":
+            # See Contract (#330): a staged bind spell the binding thread already compiled is refused when broken.
+            already_broken = [
+                spell
+                for spell in spells
+                if spell.validation_result_phase4 is not None and spell.is_broken
+            ]
+        if pending:
+            spellbook._run_post_conjure_structural_phases(pending)
+        if already_broken:
+            raise SpellbookValidationError(already_broken)
 
     def _default_dirty_marker(self, staged: ChangeControlStagedMutation) -> None:
         """

@@ -26,6 +26,14 @@ class SpellState(StrEnum):
       version) is selected. Validation never clears it and it changes no
       validity; its one reader is RiskManager, which leaves a flagged SpellIndex's
       risk out of the Book's validation flag.
+    - `late_bind_in_progress` marks a SpellIndex whose version was bound after its
+      Book was conjured and whose bind window has not ended yet (2026-11-23, #330).
+      `SpellSystemStates.register_index(..., late_bind_thread_id=...)` sets it, with
+      the binding thread's id published beside it, before the Book maps publish
+      the spell; `SpellSystemStates.clear_late_bind_marks` clears it when the window
+      ends, and `unregister_index` drops it with a lineage a refused window unwinds.
+      It changes no validity: the meld gate refuses another thread's meld that
+      reaches the spell while it is set, and the binding thread's melds pass.
 
     Threading:
         Immutable enum members; safe to read from any thread. Flags are held as
@@ -95,6 +103,9 @@ class SpellState(StrEnum):
 
     # Capability (registration)
     non_resolvable = "non_resolvable"          # selected version bound resolvable=False; owes no resolution verdict
+
+    # Bind window (declared last: the numeric era's members keep their declaration order; it has no legacy number)
+    late_bind_in_progress = "late_bind_in_progress"  # a late bind's window is open; other threads' melds are refused
 
     @classmethod
     def _missing_(cls, value: object) -> Optional[SpellState]:

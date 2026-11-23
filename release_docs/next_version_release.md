@@ -1,4 +1,4 @@
-# Melder 0.2.8315
+# Melder 0.2.8316
 
 **Unreleased**
 
@@ -87,6 +87,45 @@ goes on the workstation (`workstation.bind_object(name, obj)`, then `workstation
 says that each lane's tip is the newest version recorded there, not the active one: after a notch back,
 `research_residency(spell_id)` names the active version.
 
+## A late bind its commit refuses is undone
+
+A bind after `conjure` - a late bind - is compiled when its bind window commits. When that commit refused it, for
+example with HIDDEN_PROVIDER, the spell stayed registered: the caller was told the bind failed, and binding it again
+raised "Spell ID collision detected" (GitHub issue #330). Now the refused window is undone before the error
+propagates. Every spell the window bound leaves the Book and every registry - an existing object leaves its store slot
+and is not disposed, and a managed pool the bind created is discarded - the spells compiled against them are flagged
+for revalidation, and the error keeps its type and text and gains a note naming what was undone. Binding again meets
+the same refusal until its cause is fixed, then binds.
+
+```python
+world = book.conjure(dynamic=True, name="world")
+try:
+    book.bind(spell=Host, existence="many")   # Host asks for a class bound only under a spellframe
+except SpellbookValidationError as error:
+    print(error.__notes__)
+# ["The refused bind window was undone: 'Host' (spell_id ...) left every registry. Bind again once the refusal's
+#   cause is fixed."]
+world.meld(Host)                              # KeyError: "[MELD] No spell found for frame='host', ..."
+```
+
+A bind window is one transaction: in `with book.transaction("bind"):`, one refused spell undoes every spell the window
+bound, a version staged with `bind_inactive` included. The commit also refuses a staged spell the binding thread
+already compiled broken inside its window, which used to commit broken.
+
+**Breaking change:** while a late bind's window is open, a meld on another thread that reaches one of its spells -
+melding it, or melding a consumer whose plan would resolve it - raises `MeldExecutionError` "'<Name>' (spell_id <id>)
+is being late-bound by another thread: its bind has not committed yet, so nothing is built from it until the bind
+resolves. Meld again once that bind finishes; ...". Retry the meld once the bind finishes; there is no wait. The thread
+that holds the window melds what it binds as before.
+
+**Breaking change:** a consumer refused at its late bind is no longer registered, so a meld of it raises
+`KeyError` ("No spell found ...") instead of repeating the refusal. Fix the cause - ask for the class where it is bound,
+or bind the class bare - and bind the consumer again. A consumer bound before its class arrived under a spellframe is
+still registered and refused at its meld, with or without an override.
+
+Unchanged: binds before `conjure`, which compile at `conjure`; a late bind that commits; a window whose body raises,
+which keeps what it bound; and every meld while no late bind is open in the frame, which pays one map read.
+
 ## Packaging and documentation
 
 The codegen profile docstrings and `docs/expert/codegen.md` now state what a profile enforces on room code: its
@@ -107,4 +146,8 @@ entries (635 at 0.2.8310): neither class can be bound. The docstrings of `RiftCo
 capability and codegen rooms describe the changes; the source and test maps, their indexes and the source graph
 describe them.
 
-Agent documentation metadata and the whole-repository LLM bundles are rebuilt for 0.2.8315.
+The docstrings of `Spellbook.bind`, `Spellbook.transaction` and `Spellbook.scan` describe the undone late bind, and
+`SpellState` gains the member `late_bind_in_progress`, declared after the existing members (their legacy numbers are
+unchanged). The source and test maps, their indexes and the source graph describe the change (GitHub issue #330).
+
+Agent documentation metadata and the whole-repository LLM bundles are rebuilt for 0.2.8316.

@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/conduit/meld/meld.py",
- "source_sha256": "8f03184aeeb1210851274eac663df7c48f0fbcbe7fc411cbcfc37112b85f8958",
+ "source_sha256": "1366e40cf630bc04c97dc3af82ea93480223ce29ad30f3c6649ddcef1314f179",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.conduit.meld.meld": {
@@ -49,11 +49,11 @@
     "set_meld_hooks"
    ],
    "shape": {
-    "method_count": 45,
+    "method_count": 47,
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "65a3ff258d74cd1bf29646fbcdfada154b6a0010413f1bb123046c42c98edb50",
+   "span_sha256": "4555699463a0d5d26317862226674421be9ba001d0c50e7e33c886726cd70889",
    "role": "Resolution runtime orchestrator.",
    "responsibilities": [
     "resolves target spells",
@@ -71,7 +71,8 @@
     "keeps the fast-door registry of (spell, captured context, door epoch, existing-object flag) entries, filled only after a successful full-lane meld; its four readers share one guard ladder",
     "routes a spell flagged resolution_required through the deferred lane: phases 8-11 for an existing creation or its current Phase 5 root, otherwise the full target pass 5-11 followed by a resolution-validity check for the conduit (_requires_own_target_pass, _raise_unless_resolution_valid)",
     "answers the live-creation probe of a managed spell for both doors from its owner store's pool (_describe_managed_pool_status: live while the count is above 0, creation_count the count, storage scope managed_pool; 0 without a store or a pool) (0.2.8243)",
-    "before a spell compiles at a meld (_may_compile), and first in the deferred lane, refreshes each stale dependency its plan expands - socket targets and contracted providers, at their lineage's current version - with that dependency's owner Book under its rebuild window and lock, then resets its plan so its own next meld runs a full target pass; a broken or still-gated dependency raises SpellbookValidationError naming it (_refresh_stale_dependencies, _refresh_dependency_structure, 0.2.8250)"
+    "before a spell compiles at a meld (_may_compile), and first in the deferred lane, refreshes each stale dependency its plan expands - socket targets and contracted providers, at their lineage's current version - with that dependency's owner Book under its rebuild window and lock, then resets its plan so its own next meld runs a full target pass; a broken or still-gated dependency raises SpellbookValidationError naming it (_refresh_stale_dependencies, _refresh_dependency_structure, 0.2.8250)",
+    "refuses a meld on another thread that reaches a spell an open late bind marked (_refuse_open_late_bind, one lock-free read of SpellSystemStates.late_bind_thread_ids): at both gate entries, per catch-up dependency, and per planned dependency when a compile follows the structural branch (_refuse_planned_late_binds); the binding thread passes, and the caller retries (#330, 0.2.8316)"
    ],
    "owns_state": [
     "_input_resolution_cache",
@@ -86,7 +87,7 @@
     "runtime",
     "cleanup"
    ],
-   "semantics_authored_against": "65a3ff258d74cd1bf29646fbcdfada154b6a0010413f1bb123046c42c98edb50"
+   "semantics_authored_against": "4555699463a0d5d26317862226674421be9ba001d0c50e7e33c886726cd70889"
   }
  },
  "edges_out": [
@@ -173,6 +174,7 @@
   "nullcontext": "contextlib.nullcontext",
   "inspect": "inspect",
   "RLock": "threading.RLock",
+  "get_ident": "threading.get_ident",
   "TYPE_CHECKING": "typing.TYPE_CHECKING",
   "Optional": "typing.Optional",
   "Dict": "typing.Dict",

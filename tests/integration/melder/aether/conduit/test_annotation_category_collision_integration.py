@@ -24,8 +24,12 @@ override supplied it), that two framed spells of one class are no ambiguity, and
 Refused 2026-11-07 (patch hidden_provider_2026_11_07, TASK-2026-11-07-spellframe_ambiguity_validation_check part (a),
 0.2.8281): a class lookup whose class is bound only under a spellframe or a binding name is a HIDDEN_PROVIDER error
 naming each address and the SpellMap that reaches it - at conjure, or at the consumer's late bind in a dynamic world,
-where the consumer stays registered and every meld of it raises the same report, an override as well (D2). The cases
+where the consumer stayed registered and every meld of it raised the same report, an override as well (D2). The cases
 built on the reported shape now pin those refusals as whole texts; the frame still reaches each member.
+
+Undone 0.2.8316 (#330, the owner's decisions of 2026-11-22 and 2026-11-23): a late bind refused at its commit leaves
+nothing registered, so the refused consumer cannot be melded at its address and a retry is refused again. The MelderOps
+shape keeps a registered refused manager by binding it before the inputs it is refused for arrive.
 """
 
 import sys
@@ -377,8 +381,9 @@ def test_class_consumer_of_a_spectrum_filed_under_a_category_is_refused_naming_i
     override supplied):
         - `spectrum: Spectrum` - the class object, its name as a string, or a string unbound at runtime - is refused at
           the consumer's late bind with HIDDEN_PROVIDER, naming Spectrum's address and the SpellMap that reaches it;
-          Toolbox, a member of a category spelled like the type, is no candidate. The consumer stays registered, and
-          every meld of it raises the same report, with the host supplied by override as well (D2).
+          Toolbox, a member of a category spelled like the type, is no candidate. The refused bind is undone (#330):
+          nothing is melded at the consumer's address, and a retry is refused with the same report. Until 0.2.8316 the
+          consumer stayed registered and every meld of it raised the report, an override as well (D2).
         - Spectrum is reached through its address: `meld(spellframe="spectrum", binding_name="Spectrum")` builds it,
           and a frame-addressed `SpellMap` (`CenterWithSpellMap`) injects that same unique.
     """
@@ -401,12 +406,13 @@ def test_class_consumer_of_a_spectrum_filed_under_a_category_is_refused_naming_i
         refused = _refusal(lambda: root.bind(spell=consumer, existence="many", spellframe="command_center",
                                              binding_name="center", disposal_method_names=["cleanup"]))
         assert refused == expected, f"{name}'s late bind is not refused as HIDDEN_PROVIDER naming Spectrum's address"
-        assert _refusal(lambda: root.meld(spellframe="command_center", binding_name="center")) == expected
+        with pytest.raises(KeyError, match="No spell found for frame='command_center', binding='center'"):
+            root.meld(spellframe="command_center", binding_name="center")
+        retried = _refusal(lambda: root.bind(spell=consumer, existence="many", spellframe="command_center",
+                                             binding_name="center", disposal_method_names=["cleanup"]))
+        assert retried == expected, f"{name}'s retry is not refused again: the refused bind was not undone"
         host = root.meld(spellframe="spectrum", binding_name="Spectrum")
         assert isinstance(host, Spectrum)
-        overridden = _refusal(lambda: root.meld(spellframe="command_center", binding_name="center",
-                                                override={"spectrum": host}))
-        assert overridden == expected, f"an override let the refused {name} meld"
         root.bind(spell=CenterWithSpellMap, existence="many", spellframe="command_center",
                   binding_name="by_address", disposal_method_names=["cleanup"])
         assert root.meld(spellframe="command_center", binding_name="by_address").spectrum is host
@@ -555,11 +561,12 @@ def test_two_framed_versions_of_the_annotated_class_refuse_the_class_consumer_na
     From 2026-10-04 to 2026-11-07 the pair was a real ambiguity, refused through the readable validation report
     (AMBIGUOUS_PROVIDER) at the late bind in a dynamic world; from 2026-11-07 the consumer's socket was an unresolved
     input an override supplied. Since patch hidden_provider_2026_11_07 the late bind is refused again, with
-    HIDDEN_PROVIDER naming both addresses - ordered by spellframe - and the SpellMap of the one it needs; every meld of
-    the consumer raises that report, an override as well (D2), and each version is still reached through its own
-    address. Two providers that both answer a class lookup would both be bound bare, at one address, which bind refuses
-    (one active spell per signature per frame; TASK-2026-11-07-spellframe_ambiguity_validation_check part (b) checks
-    the other paths); the AMBIGUOUS report itself stays pinned for a Protocol frame with two implementations
+    HIDDEN_PROVIDER naming both addresses - ordered by spellframe - and the SpellMap of the one it needs; since #330
+    (0.2.8316) the refused bind is undone, so nothing is melded at the consumer's address and a retry is refused again
+    (until then every meld of it raised the report, an override as well), and each version is still reached through
+    its own address. Two providers that both answer a class lookup would both be bound bare, at one address, which
+    bind refuses (one active spell per signature per frame; TASK-2026-11-07-spellframe_ambiguity_validation_check part
+    (b) checks the other paths); the AMBIGUOUS report itself stays pinned for a Protocol frame with two implementations
     (test_spellbook_integration_resolution_contract.py::test_type_hint_di_ambiguous_frame_raises).
     """
     root = _dynamic_root("annotation-category-type-ambiguity")
@@ -578,13 +585,15 @@ def test_two_framed_versions_of_the_annotated_class_refuse_the_class_consumer_na
         refused = _refusal(lambda: root.bind(spell=CenterWithClass, existence="many", spellframe="command_center",
                                              binding_name="center", disposal_method_names=["cleanup"]))
         assert refused == expected, "the late bind is not refused naming both framed Spectrum versions"
+        with pytest.raises(KeyError, match="No spell found for frame='command_center', binding='center'"):
+            root.meld(spellframe="command_center", binding_name="center")
         primary = root.meld(spellframe="spectrum", binding_name="primary")
         secondary = root.meld(spellframe="mirror", binding_name="secondary")
         assert type(primary) is Spectrum
         assert type(secondary) is mirror
-        overridden = _refusal(lambda: root.meld(spellframe="command_center", binding_name="center",
-                                                override={"spectrum": secondary}))
-        assert overridden == expected, "an override let the refused CenterWithClass meld"
+        retried = _refusal(lambda: root.bind(spell=CenterWithClass, existence="many", spellframe="command_center",
+                                             binding_name="center", disposal_method_names=["cleanup"]))
+        assert retried == expected, "the retry is not refused again: the refused bind was not undone"
     finally:
         root.cleanup()
 
@@ -737,6 +746,24 @@ class ManagerA(Cleanable):
         del self.iris
 
 
+class LateManagerA(Cleanable):
+    """The fresh twin of ManagerA: the same typed inputs, bound after they arrived in the category."""
+
+    def __init__(self, *, spectrum_config: SpectrumConfig, iris: IrisConfig) -> None:
+        """Hold both inputs."""
+        super().__init__()
+        self.spectrum_config = spectrum_config
+        self.iris = iris
+
+    def cleanup(self) -> None:
+        """Retire once."""
+        if self._cleaned:
+            return
+        self._cleaned = True
+        del self.spectrum_config
+        del self.iris
+
+
 class ManagerB(Cleanable):
     """Another manager in the category; no inputs."""
 
@@ -782,9 +809,12 @@ def test_many_category_members_never_become_providers_and_their_class_consumers_
     or `CommandCenter.manager: ManagerA`, not for the managers' typed inputs, which until then resolved the existing
     objects by their classes. From 2026-11-07 those were unresolved inputs an override supplied (as
     Spectrum.configure supplies the host); since patch hidden_provider_2026_11_07 each is a HIDDEN_PROVIDER error
-    naming the member's address: ManagerA is refused at its late bind for both inputs, CommandCenter for both of its,
-    and every meld of either raises its report, with every input supplied by override as well (D2). Every other
-    member is still reached through its address.
+    naming the member's address. ManagerA, bound while nothing provides its inputs, is refused at its meld for both of
+    them once the existing objects arrive in the category, with both inputs supplied by override as well (D2), and its
+    late-bound twin is refused at its bind and undone (#330). CommandCenter is refused at its late bind for both of
+    its inputs - the registered ManagerA is a hidden candidate too - and undone: nothing is melded at its address, and
+    a retry is refused again. Until 0.2.8316 the refused late binds stayed registered. Every other member is still
+    reached through its address.
     """
     root = _dynamic_root("annotation-category-melderops-shape")
     try:
@@ -792,6 +822,9 @@ def test_many_category_members_never_become_providers_and_their_class_consumers_
         iris = IrisConfig("iris")
         root.bind(spell=Spectrum, existence="unique_per_conduit", spellframe="spectrum",
                   binding_name="Spectrum", disposal_method_names=["cleanup"])
+        # bound before its inputs arrive, ManagerA compiles with two unresolved inputs and stays registered
+        root.bind(spell=ManagerA, existence="unique_per_conduit", spellframe="spectrum",
+                  binding_name="ManagerA", disposal_method_names=["cleanup"])
         root.bind(spell=spectrum_config, existence="unique", spellframe="spectrum", binding_name="SpectrumConfig")
         root.bind(spell=iris, existence="unique", spellframe="spectrum", binding_name="IrisConfig")
         manager_report = _report(
@@ -801,9 +834,20 @@ def test_many_category_members_never_become_providers_and_their_class_consumers_
             _hidden_provider_line("ManagerA", "iris", "IrisConfig", _filed_at("IrisConfig", "spectrum", "IrisConfig")),
         )
         # the manager's typed inputs are existing objects filed under the category: hidden from their classes
-        assert _refusal(lambda: root.bind(spell=ManagerA, existence="unique_per_conduit", spellframe="spectrum",
-                                          binding_name="ManagerA", disposal_method_names=["cleanup"])) == (
-            manager_report), "ManagerA's late bind is not refused for both of its category-filed inputs"
+        assert _refusal(lambda: root.meld(spellframe="spectrum", binding_name="ManagerA")) == manager_report, (
+            "ManagerA's meld is not refused for both of its category-filed inputs once they arrived")
+        late_manager_report = _report(
+            "LateManagerA", "LateManagerA (frame 'spectrum')",
+            _hidden_provider_line("LateManagerA", "spectrum_config", "SpectrumConfig",
+                                  _filed_at("SpectrumConfig", "spectrum", "SpectrumConfig")),
+            _hidden_provider_line("LateManagerA", "iris", "IrisConfig",
+                                  _filed_at("IrisConfig", "spectrum", "IrisConfig")),
+        )
+        assert _refusal(lambda: root.bind(spell=LateManagerA, existence="unique_per_conduit", spellframe="spectrum",
+                                          binding_name="LateManagerA", disposal_method_names=["cleanup"])) == (
+            late_manager_report), "LateManagerA's late bind is not refused for both of its category-filed inputs"
+        with pytest.raises(KeyError, match="No spell found for frame='spectrum', binding='latemanagera'"):
+            root.meld(spellframe="spectrum", binding_name="LateManagerA")
         root.bind(spell=ManagerB, existence="unique_per_conduit", spellframe="spectrum",
                   binding_name="ManagerB", disposal_method_names=["cleanup"])
         root.bind(spell=make_report, existence="unique", spellframe="spectrum", binding_name="make_report")
@@ -817,16 +861,16 @@ def test_many_category_members_never_become_providers_and_their_class_consumers_
         assert _refusal(lambda: root.bind(spell=CommandCenter, existence="many", spellframe="command_center",
                                           binding_name="center", disposal_method_names=["cleanup"])) == (
             center_report), "CommandCenter's late bind is not refused for the host and the manager"
+        with pytest.raises(KeyError, match="No spell found for frame='command_center', binding='center'"):
+            root.meld(spellframe="command_center", binding_name="center")
+        assert _refusal(lambda: root.bind(spell=CommandCenter, existence="many", spellframe="command_center",
+                                          binding_name="center", disposal_method_names=["cleanup"])) == (
+            center_report), "CommandCenter's retry is not refused again: the refused bind was not undone"
         host = root.meld(spellframe="spectrum", binding_name="Spectrum")
         assert isinstance(host, Spectrum)
         assert _refusal(lambda: root.meld(spellframe="spectrum", binding_name="ManagerA",
                                           override={"spectrum_config": spectrum_config, "iris": iris})) == (
             manager_report), "an override let the refused ManagerA meld"
-        manager = ManagerA(spectrum_config=spectrum_config, iris=iris)
-        assert _refusal(lambda: root.meld(spellframe="command_center", binding_name="center",
-                                          override={"spectrum": host, "manager": manager})) == center_report, (
-            "an override let the refused CommandCenter meld")
-        manager.cleanup()
         # every other member is reached through its address
         assert isinstance(root.meld(spellframe="spectrum", binding_name="ManagerB"), ManagerB)
         assert root.meld(spellframe="spectrum", binding_name="make_report") == {"report": True}

@@ -878,10 +878,10 @@ Responsibilities:
   `mediator.start_transaction(...)` itself and calling in here inside the
   held window.
   EVIDENCE:
-  - src/melder/aether/spellbook/spellbook.py:4042, 4190 (`_notch_spell` -> `_apply_notch`)
-  - src/melder/aether/spellbook/spellbook.py:4829, 4867 (`_add_to_spell_index` -> `_apply_add_to_index`)
-  - src/melder/aether/spellbook/spellbook.py:5053, 5087 (`_remove_from_spell_index` -> `_apply_remove_from_index`)
-  - src/melder/aether/spellbook/spellbook.py:4117-4119 (states the Conduit admits it)
+  - src/melder/aether/spellbook/spellbook.py:4065, 4213 (`_notch_spell` -> `_apply_notch`)
+  - src/melder/aether/spellbook/spellbook.py:4852, 4890 (`_add_to_spell_index` -> `_apply_add_to_index`)
+  - src/melder/aether/spellbook/spellbook.py:5076, 5110 (`_remove_from_spell_index` -> `_apply_remove_from_index`)
+  - src/melder/aether/spellbook/spellbook.py:4140-4142 (states the Conduit admits it)
   - src/melder/aether/conduit/conduit.py:5827, 6206, 6313 (notch/add/remove
     acquire `_get_required_transaction_mediator()`)
 - Run phase pipelines before conjure.
@@ -890,6 +890,19 @@ Responsibilities:
 - Scan user-supplied modules for `scan_bind` metadata and bind spells.
   Since 0.2.8228 only an object's own declaration makes it a target, each object binds once per scan,
   and a declaration carries bind()'s full target options (Subcomponent: Scan-Bind Module Scanner).
+- Undo a refused late-bind window (0.2.8316, #330). A bind after conjure pins the Book's validation flag up
+  (`_pending_late_bind_spell_ids`, read by `_set_spellbook_validation_required`), then registers its lineage marked
+  as being late-bound with the binding thread's id (`register_index(..., late_bind_thread_id=...)`), then publishes
+  the Book maps. The window keeps what an unwind needs: the late binds, the parked `bind_inactive` mates with the
+  throwaway index their gate was registered under, the spell ids whose managed pool the bind composed and the store
+  keys it filed for existing objects. `_unwind_refused_bind_window(refusal)`, called by the change-control default
+  abort hook when the commit's structural validator refused the window, undoes each late bind and parked mate,
+  re-gates the consumers refused because of them and notes what it did on the refusal; `_end_bind_window`, run when
+  the outermost bind window ends, committed or not, clears the marks still registered, the bookkeeping and the pin,
+  and has the RiskManager recompute the flag.
+  EVIDENCE: `src/melder/aether/spellbook/spellbook.py:Spellbook.bind`, `Spellbook._unwind_refused_bind_window`,
+  `Spellbook._unwind_late_bound_spell`, `Spellbook._unwind_parked_window_mate`, `Spellbook._end_bind_window` and
+  `Spellbook.end_transaction`.
 
 Inputs:
 - User spell objects, configuration inputs, policy/automatic flags.
@@ -910,12 +923,18 @@ Owned State:
 - `_spell_validator`, `_spell_system_states`.
 - `_configuration`, `_configuration_locked`.
 - `_conduit`, `_conjured`, `_bind`.
+- The bind window's bookkeeping (0.2.8316, #330), beside `_pending_structural_spells`:
+  `_pending_late_bind_spell_ids` (the late binds, in bind order; non-empty pins the validation flag),
+  `_pending_inactive_spells` (parked mates with their throwaway index id), `_pending_composed_pool_ids` and
+  `_pending_registered_slot_keys`.
 
 Lifecycle/Cleanup:
 - `SpellbookConfiguration` is validated/frozen before conjure.
 - Cleanup is idempotent, unregisters local lineages from SpellSystemStates, cleans its spells - the parked
   versions and the indexes only they hold included since 0.2.8260 - and clears configuration, validators, and
   logger. EVIDENCE: src/melder/aether/spellbook/spellbook.py:_cleanup_spells
+- The bind window's bookkeeping is reset when a window opens (`_prepare_bind_transaction_state`), cleared when it
+  ends (`_clear_bind_transaction_state`, from `_end_bind_window`) and deleted at cleanup.
 
 Concurrency/Threading:
 - TWO DISTINCT RLocks with different scopes, and the second one is the
@@ -949,7 +968,7 @@ Concurrency/Threading:
     caller that takes the run lock and then reaches a `_lock`-guarded Spellbook
     method would introduce the inversion silently.
   EVIDENCE:
-  - src/melder/aether/spellbook/spellbook.py:8536-8557 (`_run_structural_phases`; the caller-held-lock
+  - src/melder/aether/spellbook/spellbook.py:9147-9168 (`_run_structural_phases`; the caller-held-lock
     precondition is stated at :8547; remeasured 2026-11-08 at 0.2.8285)
   - src/melder/aether/spellbook/spellbook_creation_system.py:2157 (the only
     `_phase_run_lock` acquisition, reached from that path)
@@ -958,10 +977,10 @@ Concurrency/Threading:
   deterministic conjure ordering. That is a contract the type cannot enforce,
   which is why it is written down here.
   EVIDENCE:
-  - src/melder/aether/spellbook/spellbook.py:291 (`_phase_run_lock` created)
+  - src/melder/aether/spellbook/spellbook.py:310 (`_phase_run_lock` created)
   - src/melder/aether/spellbook/spellbook_creation_system.py:2129-2157
     (`_run_scheduler_with_phases` - the only acquisition, with its rationale)
-  - src/melder/aether/spellbook/spellbook.py:1180-1190 (the cache-emit flag re-checked and cleared under `_lock`,
+  - src/melder/aether/spellbook/spellbook.py:1203-1213 (the cache-emit flag re-checked and cleared under `_lock`,
     and set again under it when the save raises; remeasured 2026-10-24 at 0.2.8266)
 - `find_spell_by_spell_id` (`find_spell_by_id` until 0.2.8253) is lock-free on purpose (0.2.8229): it reads
   `_spells_by_id`, then `_inactive_spells` (until 0.2.8253 a parked hit also read
@@ -1125,6 +1144,18 @@ Invariants/Guarantees:
   another Book can settle the shared frame between prediction and settlement.
   EVIDENCE: `src/melder/aether/spellbook/spellbook.py:Spellbook.conjure`, `Spellbook._effective_conjure_mode`,
   `Spellbook._refuse_recorded_conjure_after_mutable_binds` and `Spellbook._conjure_within_transaction_window`.
+- Mark before publish (0.2.8316, #330): a late-bound spell's lineage carries `SpellState.late_bind_in_progress`,
+  and the Book's flag is up and pinned, before the Book maps publish the spell, so a meld on another thread that can
+  find it takes the validation lane, where the mark refuses it. Both writes are program-ordered on the binding
+  thread; their memory ordering under free threading is an accepted UNKNOWN.
+- A refused late bind leaves nothing registered (0.2.8316, #330). The unwind runs only for a bind window whose
+  commit the structural validator refused, on the committing thread with the window's claims held; it touches only
+  what the window registered, holds no Book lock across a step, and never raises (each step best-effort, logged at
+  ERROR and noted on the refusal). It leaves the frame's link to the Book's spell-id set in place
+  (`Aether._remove_single_spell_index`), so a Book it empties still shows the frame later binds. An in-window abort
+  unwinds nothing, and its spells' marks clear at the window end.
+  EVIDENCE: `src/melder/aether/spellbook/spellbook.py:Spellbook._unwind_refused_bind_window`,
+  `Spellbook._run_unwind_step` and `Spellbook._end_bind_window`.
 
 Failure Modes:
 - `SpellbookValidationError` when Phase 1-4 produces broken spells.
@@ -1204,10 +1235,15 @@ Failure Modes:
   separating a spell that is the SOLE member of its source index (use
   `cleanup_spell` to dispose it instead).
   EVIDENCE:
-  - src/melder/aether/spellbook/spellbook.py:4190-4407 (`_apply_notch`)
-  - src/melder/aether/spellbook/spellbook.py:4409-4491 (`_refuse_unparked_incoming`)
-  - src/melder/aether/spellbook/spellbook.py:4867-4972 (`_apply_add_to_index`)
-  - src/melder/aether/spellbook/spellbook.py:5087-5207 (`_apply_remove_from_index`)
+  - src/melder/aether/spellbook/spellbook.py:4213-4430 (`_apply_notch`)
+  - src/melder/aether/spellbook/spellbook.py:4432-4514 (`_refuse_unparked_incoming`)
+  - src/melder/aether/spellbook/spellbook.py:4890-4995 (`_apply_add_to_index`)
+  - src/melder/aether/spellbook/spellbook.py:5110-5230 (`_apply_remove_from_index`)
+- A late bind refused at its window's commit (0.2.8316, #330) raises its SpellbookValidationError after the
+  unwind, with a note "The refused bind window was undone: ... left every registry. Bind again once the refusal's
+  cause is fixed." and one note per step that failed; a retry meets the same refusal, not a spell-id collision.
+  The commit also refuses a staged spell the binding thread compiled broken inside its window.
+  EVIDENCE: `src/melder/aether/spellbook/spellbook.py:Spellbook._unwind_refused_bind_window`.
 
 Observability:
 - `SafeLogger` on the Spellbook instance, used at `error` level on the failure
@@ -1217,7 +1253,7 @@ Observability:
   There is no info/debug narration of the happy path; absence of log output is
   the normal state, not a sign that nothing ran.
   EVIDENCE:
-  - src/melder/aether/spellbook/spellbook.py:6988-6993 (`Spellbook._initialize_configuration`, the
+  - src/melder/aether/spellbook/spellbook.py:7578-7583 (`Spellbook._initialize_configuration`, the
     configuration-mismatch branch; remeasured 2026-11-08 at 0.2.8285)
 
 Extension Points:
@@ -1495,7 +1531,7 @@ Outputs:
   EVIDENCE:
   - src/melder/aether/spellbook/bind/bind.py:475-612 (`bind`, decorator,
     `_bind_logic -> Spell`)
-  - src/melder/aether/spellbook/spellbook.py:6511-6527 (`Spellbook.bind
+  - src/melder/aether/spellbook/spellbook.py:7054-7070 (`Spellbook.bind
     -> str`)
   - src/melder/aether/spellbook/bind/bind.py:66-110 (`assert_allowed`)
 
@@ -4833,6 +4869,11 @@ Responsibilities:
 - Store many entries as `store_key -> list[object]`.
 - Keep one shelf per spell id - the store keys filed under it and each slot's shape - for purge, the live count
   and extract/restore (0.2.8274).
+- Give one slot back without disposing what it holds (`forget_slot(key) -> bool`, 0.2.8316, #330): the live entry,
+  its disposal record, its shelf entry (an emptied shelf goes) and its shape leave under the store lock, a leaf that
+  runs no user code; the slot guard stays. The unwind of a refused late-bind window uses it for the slot its bind
+  filed for a caller's existing object. A key the store does not hold, or a cleaned store, answers False.
+  EVIDENCE: `src/melder/aether/conduit/creations/creations.py:Creations.forget_slot`.
 - Dispose tracked entries during cleanup using only the detached disposable
   metadata registry.
 - Provide SpellSpace scoping for unique_per_spell_space.
@@ -5450,6 +5491,16 @@ Responsibilities:
 - Apply hooks and register instances into Creations.
 - Enforce spell validity and change-control gates.
 - Gate execution when ChangeControlManager marks a root dirty (if available).
+- Refuse a meld that reaches a spell another thread is late-binding (0.2.8316, #330; no wait - the caller
+  retries): `Meld._refuse_open_late_bind` reads `SpellSystemStates.late_bind_thread_ids` once, lock-free, and raises
+  MeldExecutionError unless the map is empty, the spell is not in it, or the calling thread is the binding thread.
+  It runs at `_ensure_lineage_resolvable`'s entry, at `_ensure_runtime_resolution_ready`'s entry, for each
+  dependency `_refresh_stale_dependencies` visits, and - when a compile follows the structural branch - for each
+  dependency of the plan about to expand (`_refuse_planned_late_binds`, which returns at once on an empty map). A
+  dependency's refusal names the melded spell as the error's spell and the late-bound one in its message. The warm
+  doors need no check: the Book's flag is pinned up while its late bind is open.
+  EVIDENCE: `src/melder/aether/conduit/meld/meld.py:Meld._refuse_open_late_bind`, `Meld._refuse_planned_late_binds`,
+  `Meld._ensure_lineage_resolvable`, `Meld._ensure_runtime_resolution_ready` and `Meld._refresh_stale_dependencies`.
 - Perform lazy structural/resolution validation when validity is UNKNOWN or GATED.
 - Build spell-bound `CreationContext` instances through `CreationContextBuilder`, which consumes the compiler-owned
   `_spell_codegen_creation` handoff for constructed spells.
@@ -5533,6 +5584,11 @@ Invariants/Guarantees:
 
 Failure Modes:
 - ValueError when no identity inputs are provided.
+- MeldExecutionError "'<name>' (spell_id <id>) is being late-bound by another thread: its bind has not committed
+  yet, so nothing is built from it until the bind resolves. Meld again once that bind finishes; ..." - or, for a
+  consumer whose plan reaches such a spell, "Cannot meld '<consumer>' now: its plan resolves '<name>' (spell_id
+  <id>), which is being late-bound by another thread ..." - for a meld on another thread inside a late-bind window
+  (0.2.8316, #330). After the bind commits the same meld builds; after a refusal the spell is gone.
 - KeyError "[MELD] No spell found with spell_id: <id>" when no version a door may reach carries the spell_id - for
   a meld door, no active version; for purge and the probes, no version the door's Book can see (0.2.8269) - and
   KeyError when a lookup key cannot be resolved.
@@ -5583,7 +5639,7 @@ Observability:
   no spell object, shared hooks changed through a lesser). Reading only the message loses that split.
   EVIDENCE:
   - src/melder/aether/conduit/meld/meld.py:23-26
-  - src/melder/aether/conduit/meld/meld.py:1275-1283 (`Meld._gated_validation_required`: the dirty-root refusal)
+  - src/melder/aether/conduit/meld/meld.py:1293-1301 (`Meld._gated_validation_required`: the dirty-root refusal)
 
 Extension Points:
 - Hook maps from `SpellbookConfiguration`, resolved per spellbook id. A hook
@@ -6478,9 +6534,9 @@ Dirty terminology guardrail for this pipeline:
     (`reset_phase8_11_codegen_ir`)
   - `src/melder/aether/spellbook/spell_compiler/spell_compiler.py:535-546`
     (`run_phase_change_control_local`)
-  - `src/melder/aether/aetheric_frame/dev_ops/change_control_manager/change_control_manager.py:1655`
+  - `src/melder/aether/aetheric_frame/dev_ops/change_control_manager/change_control_manager.py:1748`
     (`is_root_dirty`)
-  - `src/melder/aether/conduit/meld/meld.py:1242` (`_gated_validation_required`)
+  - `src/melder/aether/conduit/meld/meld.py:1260` (`_gated_validation_required`)
 
 PhaseScheduler coordinates these phases using persistent worker threads and a fresh cancellation
 event per run; broken spells trigger SpellbookValidationError. Local Phase-5/6 registration defers
@@ -6518,6 +6574,25 @@ Responsibilities:
   so a notch back to a resolvable version counts the lineage again at once, and `register_conduit` seeds every
   visible spell and refreshes once (0.2.8247). EVIDENCE:
   src/melder/aether/aetheric_frame/dev_ops/risk_manager/risk_manager.py:RiskManager._has_unexcluded_risk.
+- Mark the lineages an open late bind registered (0.2.8316, #330). `register_index(...,
+  late_bind_thread_id=<thread id>)` flags the state `SpellState.late_bind_in_progress` and publishes spell id ->
+  binding thread id in `late_bind_thread_ids`, a dict replaced whole under the registry lock and read without it by
+  the meld gate; `clear_late_bind_marks(spell_ids)` takes both away at the window's end, and `unregister_index` drops
+  the mark with its lineage. The flag changes no validity. `RiskManager.refresh_spellbook_flag(conduit_id)` is the
+  public form of the Book-flag refresh the window end asks for.
+  EVIDENCE: `src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_system_states.py:SpellSystemStates.register_index`,
+  `SpellSystemStates.late_bind_thread_ids`, `SpellSystemStates.clear_late_bind_marks` and
+  `src/melder/aether/aetheric_frame/dev_ops/risk_manager/risk_manager.py:RiskManager.refresh_spellbook_flag`.
+- Undo a refused late-bind window in the change-control abort slot (0.2.8316, #330; the owner's decision of
+  2026-11-22). `_dispatch_commit_validator` records a bind request whose structural validator raised
+  (`_refused_bind_requests`, request id -> the refusal) before re-raising; the default abort hook, installed at
+  init, pops that record - every other request returns at once - and has the request's Spellbook unwind the window
+  (`Spellbook._unwind_refused_bind_window`), or notes on the refusal that no Spellbook resolved. The orchestrator
+  runs the hook on the committing thread before it releases the claims, then re-raises. The structural validator
+  also refuses a staged bind spell whose Phase-4 result is already broken (SpellbookValidationError naming it),
+  after the uncompiled staged spells have run.
+  EVIDENCE: `src/melder/aether/aetheric_frame/dev_ops/change_control_manager/change_control_manager.py:ChangeControlManager._dispatch_commit_validator`,
+  `ChangeControlManager._default_abort_hook` and `ChangeControlManager._default_structural_validator`.
 
 Inputs:
 - SpellIndex/Spell registrations and dependency updates.
@@ -6530,7 +6605,10 @@ Outputs:
 Owned State:
 - `SpellSystemStates` indexes, dirty sets, and `_resolution_by_conduit_id`.
 - `ConduitResolutionState` validity maps, diagnostics, and dirty flags.
-- `ChangeControlManager` pending changes and dirty roots.
+- `ChangeControlManager` pending changes and dirty roots, and the refused bind requests awaiting their unwind
+  (`_refused_bind_requests`, cleared and deleted at cleanup).
+- `SpellSystemStates._late_bind_thread_by_spell_id`, the published late-bind map (an empty dict tombstone after
+  cleanup, for lock-free readers).
 - `DevOpsManager` incident and change control managers.
 - `RiskManager` per-conduit risk sets and spellbook gating state. EVIDENCE: src/melder/aether/aetheric_frame/dev_ops/risk_manager/risk_manager.py:__init__ + _conduit_states.
 
@@ -6582,10 +6660,15 @@ Invariants/Guarantees:
   registration (bind, notch, the transfer flip and its rollback pass the capability to `register_index`) until a
   resolvable version is selected. It never holds its Book's validation flag up, and its validity and verdicts stay
   truthful: the flag changes neither, and validation never clears it (0.2.8247).
+- `late_bind_thread_ids` holds exactly the spell ids whose state carries `SpellState.late_bind_in_progress`: the
+  flag and the map entry are set and cleared in one locked section. Only a structurally refused bind request
+  unwinds; an in-window abort and every other failed commit keep their spells (0.2.8316, #330).
 
 Failure Modes:
 - ValueError for invalid or missing ids.
 - RuntimeError when SpellSystemStates is cleaned/unavailable for state access.
+- TypeError from `register_index` when `late_bind_thread_id` is neither None nor an int (a bool is refused),
+  before anything is registered (0.2.8316).
 
 Observability:
 - NO LOGGER IN THE MANAGER ITSELF, and only `ValueError` raised directly from
@@ -7922,14 +8005,14 @@ Contract/Interface:
   THE ADD AND REMOVE DOCSTRINGS WERE WRONG UNTIL 0.2.8249. Both said "Delegates to
   the owning Spellbook, WHICH ADMITS the [...] change-control transaction", while
   both methods call `mediator.start_transaction(...)` a few lines further down;
-  `src/melder/aether/spellbook/spellbook.py:4117-4119` states it correctly.
+  `src/melder/aether/spellbook/spellbook.py:4140-4142` states it correctly.
   `notch_spell`'s docstring said the same. Since 0.2.8249 all three say the conduit
   admits the transaction (raised on TASK-2026-08-02-stale-source-docstrings).
   EVIDENCE:
   - src/melder/aether/conduit/conduit.py:5711, 6128, 6249 (public verbs)
   - src/melder/aether/conduit/conduit.py:5908, 5947, 6002, 6053, 6089 (`_resolve_notch_target`,
     `_owned_notch_target`, `_check_spell_argument`, `_owned_spell_by_id`, `_resolve_spell_to_move`)
-  - src/melder/aether/spellbook/spellbook.py:4190, 4867, 5087 (applied seams)
+  - src/melder/aether/spellbook/spellbook.py:4213, 4890, 5110 (applied seams)
 Data Structures:
 - Transaction metadata carrying spellbook/conduit ids, binding key, member id,
   and source/target SpellIndex ids.
@@ -8980,8 +9063,13 @@ Contract/Interface:
   `Meld._may_compile` and by the deferred lane for a flagged spell - refreshes the stale lineages the plan expands;
   there is no per-meld SpellContract scan: a provider change marks the consumer and the structural rerun rechecks
   it (0.2.8250).
+- `Meld._refuse_open_late_bind(spell, consumer=None)` refuses a meld on another thread that reaches a spell an open
+  late bind marked (0.2.8316, #330): at both entries, per catch-up dependency, and per planned dependency when a
+  compile follows the structural branch (`Meld._refuse_planned_late_binds`). The Book's flag is pinned up while
+  its late bind is open, so every such meld enters the gate.
 Data Structures:
 - SpellSystemStates lineage validity and change-control dirty-root state.
+- `SpellSystemStates.late_bind_thread_ids` (spell id -> binding thread id), read lock-free.
 Concurrency/Threading:
 - RLock.
 Key Files (C1):
@@ -9125,6 +9213,15 @@ Contract/Interface:
   (`SpellSystemState._republish_validity`), because the gate then publishes nothing. `unregister_index` takes the
   lineage out of the set; `index_has_flag(index_id, flag)` is the per-lineage read (0.2.8247). EVIDENCE:
   src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_system_states.py:SpellSystemStates.register_index.
+- `register_index(..., *, late_bind_thread_id=None)` marks a late bind (0.2.8316, #330): an int adds
+  `SpellState.late_bind_in_progress` to the state and publishes `selected_spell_id -> late_bind_thread_id` in
+  `late_bind_thread_ids` in the same locked section (`_publish_late_bind_mark_locked`, copy-on-write); None leaves an
+  existing mark; anything else (a bool included) raises TypeError before anything is registered.
+  `clear_late_bind_marks(spell_ids)` removes the flag from each registered state and the ids from the map, replacing
+  the map once; `unregister_index` drops the removed spell id's entry in both its branches. `late_bind_thread_ids`
+  (`check_cleaned`, then one reference read) is the meld gate's read; cleanup leaves an empty dict tombstone.
+  EVIDENCE: `src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_system_states.py:SpellSystemStates.late_bind_thread_ids`,
+  `SpellSystemStates.clear_late_bind_marks` and `SpellSystemStates._publish_late_bind_mark_locked`.
 - `register_index(..., *, resolvable=None, binding_key=None)` records the selected version's normalized
   `(frame_key, binding_key)` (`Spell._key`; bind and `_apply_notch` pass it) in `_binding_key_by_index`; None keeps
   the recorded key, a value that is not a pair of strings raises TypeError before anything is registered, and
@@ -9916,11 +10013,19 @@ are new; steps 3-7 were 1-5.)
    - Runs activation(Spell), completes its profile, then attaches later creation hooks.
    - Checks native collisions before registering local lookup keys - since 0.2.8257 the one-object rule: a
      second registration of one object is refused, its message naming the rule and the remedies.
+   - After conjure, appends the spell id to `_pending_late_bind_spell_ids` and raises the Book flag (the pin),
+     then registers the lineage with `late_bind_thread_id=threading.get_ident()` (0.2.8316, #330).
    - Registers lineage in SpellSystemStates (marks dirty) and retires any per-conduit resolution verdict already
-     held for the new spell id (0.2.8219), so a rebound content-stable id is resolved again per conduit.
-   - If Conduit exists, stamps ownership and registers existing objects into Creations.
+     held for the new spell id (0.2.8219), so a rebound content-stable id is resolved again per conduit; since
+     0.2.8316 this runs before the Book maps publish the spell.
+   - If Conduit exists, stamps ownership and registers existing objects into Creations (recording a managed pool
+     the stamp composes and a slot it files, for the window's unwind).
    - Completes normal publication and calls Bind.execute_post_hooks with the captured set.
-   - Ends the existing transaction; the returned spell_id contract is unchanged.
+   - Ends the existing transaction; the returned spell_id contract is unchanged. The outermost end commits:
+     `ChangeControlManager._dispatch_commit_validator` -> `_default_structural_validator` (Phases 1-4 of the staged
+     spells; an already-compiled broken one refused). On a refusal the orchestrator calls `_default_abort_hook` ->
+     `Spellbook._unwind_refused_bind_window(refusal)` with the claims held, then re-raises; in every case the window
+     end's `finally` runs `Spellbook._end_bind_window` (marks, bookkeeping and pin cleared, flag refreshed).
 2. `Spellbook.bind_inactive(...)` runs the same stages for a parked version; right after the collision check,
    before the hooks and the registration, it checks the target index's liveness, its ownership (RuntimeError)
    and `SpellIndex.check_admits` (ValueError; 0.2.8273), then registers the version parked, stamps it when the
@@ -10107,6 +10212,9 @@ are new; steps 3-7 were 1-5.)
    change announced at a hidden candidate's address (a notch to a class of another name returns it to step 3).
 
 ### Flow: Meld-Time Validation Gate
+0. `Meld._refuse_open_late_bind(spell)` first (0.2.8316, #330): MeldExecutionError when another thread holds the
+   spell in an open late-bind window; the same check runs per dependency in step 7's catch-up and, when a compile
+   follows step 2, per planned dependency (`Meld._refuse_planned_late_binds`), and first in step 4's deferred lane.
 1. `Meld._ensure_lineage_resolvable(...)` checks SpellSystemState validity.
 2. If validity is UNKNOWN/GATED:
    - `spell.run_structural_phases()` executes under the per-spell lock.
@@ -10457,9 +10565,9 @@ description of the file; what changed in a file is recorded in the Context / Han
   verified_at: 2026-10-25T01:07:42Z
 - path: `src/melder/aether/spellbook/spellbook.py`
   start_line: 1
-  end_line: 8742
-  loc: 8742
-  verified_at: 2026-11-08T12:50:22Z
+  end_line: 9354
+  loc: 9354
+  verified_at: 2026-11-23T10:55:43Z
 - path: `src/melder/aether/spellbook/spellbook_creation_system.py`
   start_line: 1
   end_line: 3551
@@ -10866,9 +10974,9 @@ description of the file; what changed in a file is recorded in the Context / Han
   verified_at: 2026-11-02T12:02:57Z
 - path: `src/melder/aether/conduit/creations/creations.py`
   start_line: 1
-  end_line: 1962
-  loc: 1962
-  verified_at: 2026-10-25T12:58:00Z
+  end_line: 2017
+  loc: 2017
+  verified_at: 2026-11-23T10:55:43Z
 - path: `src/melder/aether/conduit/creations/conduit_creations.py`
   start_line: 1
   end_line: 134
@@ -10911,9 +11019,9 @@ description of the file; what changed in a file is recorded in the Context / Han
   verified_at: 2026-10-25T01:07:42Z
 - path: `src/melder/aether/conduit/meld/meld.py`
   start_line: 1
-  end_line: 2501
-  loc: 2501
-  verified_at: 2026-11-08T15:30:59Z
+  end_line: 2623
+  loc: 2623
+  verified_at: 2026-11-23T10:55:43Z
 - path: `src/melder/aether/conduit/meld/conduit_meld.py`
   start_line: 1
   end_line: 1143
@@ -10971,9 +11079,9 @@ description of the file; what changed in a file is recorded in the Context / Han
   verified_at: 2026-10-25T01:07:42Z
 - path: `src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_system_states.py`
   start_line: 1
-  end_line: 2061
-  loc: 2061
-  verified_at: 2026-11-07T20:43:01Z
+  end_line: 2218
+  loc: 2218
+  verified_at: 2026-11-23T10:55:43Z
 - path: `src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_system_state.py`
   start_line: 1
   end_line: 806
@@ -10986,19 +11094,19 @@ description of the file; what changed in a file is recorded in the Context / Han
   verified_at: 2026-10-25T01:07:42Z
 - path: `src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_state.py`
   start_line: 1
-  end_line: 127
-  loc: 127
-  verified_at: 2026-11-02T12:02:57Z
+  end_line: 138
+  loc: 138
+  verified_at: 2026-11-23T10:55:43Z
 - path: `src/melder/aether/aetheric_frame/dev_ops/change_control_manager/change_control_manager.py`
   start_line: 1
-  end_line: 1739
-  loc: 1739
-  verified_at: 2026-11-07T20:43:01Z
+  end_line: 1832
+  loc: 1832
+  verified_at: 2026-11-23T10:55:43Z
 - path: `src/melder/aether/aetheric_frame/dev_ops/risk_manager/risk_manager.py`
   start_line: 1
-  end_line: 751
-  loc: 751
-  verified_at: 2026-11-01T13:44:23Z
+  end_line: 785
+  loc: 785
+  verified_at: 2026-11-23T10:55:43Z
 - path: `src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/transaction_mediator.py`
   start_line: 1
   end_line: 1458
@@ -13083,7 +13191,7 @@ payloads are byte-compatible supersets (the "admission" key is additive).
 - Restore: crystal_loader_system/graft_runner.py - GraftRunner
   (single-use, Cleanable): RecordVersion gate + graft_kind refusal ->
   unconjured-host refusal (public `Spellbook.conduit` accessor,
-  `src/melder/aether/spellbook/spellbook.py:7849`) -> per-member overlap rule via
+  `src/melder/aether/spellbook/spellbook.py:8460`) -> per-member overlap rule via
   `host_frame.find_index_for_spell`
   (`src/melder/aether/aetheric_frame/aetheric_frame.py:943`; resident member
   REFUSES by default;

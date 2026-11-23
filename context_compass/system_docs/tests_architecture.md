@@ -874,9 +874,9 @@ Rift gate modules (one unit, one component; mocks 44 and experimentation 204 unc
   verified_at: 2026-11-02T12:02:57Z
 - path: `tests/unit/melder/aether/dev_ops/spell_system_states/test_spell_state_strenum_657.py`
   start_line: 1
-  end_line: 75
-  loc: 75
-  verified_at: 2026-11-02T12:02:57Z
+  end_line: 85
+  loc: 85
+  verified_at: 2026-11-23T10:55:43Z
 - path: `tests/unit/melder/aether/dev_ops/change_control_manager/test_devops_transaction_type_strenum_657.py`
   start_line: 1
   end_line: 214

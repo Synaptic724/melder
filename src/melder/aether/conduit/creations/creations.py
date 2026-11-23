@@ -867,6 +867,61 @@ class Creations(Cleanable):
             self._note_slot(key, False)
         self._creations[key] = item
 
+    def forget_slot(self, key: str) -> bool:
+        """
+        Take one slot out of this store without disposing what it holds.
+
+        Purpose:
+            Give a caller that filed a slot a way to take it back when the filing is
+            undone rather than retired: the unwind of a refused late-bind window
+            (#330, 2026-11-23) takes back the slot its bind filed for an existing
+            object. That object is the caller's, so its disposal methods must not
+            run - which rules out `purge`, a clear and `cleanup`, the store's other
+            ways of giving a slot up.
+
+        Contract:
+            - Removes the key's live entry from `_creations` and its disposal
+              record from `_disposable_creations`, and takes the key off its spell
+              id's shelf (dropping the shelf when it empties) together with its
+              slot shape. No disposal method runs and nothing is returned to the
+              caller: the object stays wherever else it is referenced.
+            - The key's slot guard stays: guards are never removed while the store
+              is live (`slot_guard`), and a later filing of the key reuses it and
+              files afresh on its shelf.
+            - Returns False and changes nothing when the store holds no slot under
+              the key, or is cleaned.
+
+        Args:
+            key:
+                The slot's store key (`Spell.store_key`).
+
+        Returns:
+            bool: True when a slot was held under the key and removed.
+
+        Threading:
+            Runs under the store lock, a leaf: it takes nothing under it and runs
+            no user code. The shelf index is written here and in `_note_slot` and
+            `cleanup`, all under this lock, so a reader under the lock sees it
+            whole.
+        """
+        with self._lock:
+            if self._cleaned:
+                return False
+            held = key in self._creations or key in self._disposable_creations
+            if not held:
+                return False
+            self._creations.pop(key, None)
+            self._disposable_creations.pop(key, None)
+            spell_id, separator, _binding_hash = key.rpartition(":")
+            shelf_id = spell_id if separator else key
+            shelf = self._shelves.get(shelf_id)
+            if shelf is not None and key in shelf:
+                shelf.remove(key)
+                if not shelf:
+                    self._shelves.pop(shelf_id, None)
+            self._slot_shapes.pop(key, None)
+            return True
+
     def add_many_creations(
             self,
             key: str,

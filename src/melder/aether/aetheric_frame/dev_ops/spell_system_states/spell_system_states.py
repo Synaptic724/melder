@@ -77,15 +77,17 @@ class SpellSystemStates(Cleanable):
         current-spell-id index, the dirty set, per-Spellbook collection
         dependency indices, per-Spellbook SpellContract consumer indices,
         the binding key each SpellIndex was registered under, per-conduit
-        `ConduitResolutionState` keyed by conduit_id, and the published set of
-        spell indexes flagged `SpellState.non_resolvable`.
+        `ConduitResolutionState` keyed by conduit_id, the published set of
+        spell indexes flagged `SpellState.non_resolvable`, and the published map
+        of the spell ids an open late bind has marked
+        (`SpellState.late_bind_in_progress`) to the binding thread's id.
 
     Threading:
         Read on the meld hot path and written from binding, validation, and
         change-control flows, so mutation is serialized internally. Dirty
         consumption is drain-shaped rather than read-only: taking a worklist
-        clears it. `non_resolvable_index_ids` is replaced whole under the lock
-        and read without it.
+        clears it. `non_resolvable_index_ids` and `late_bind_thread_ids` are
+        replaced whole under the lock and read without it.
 
     Lifecycle / Cleanup:
         One instance per `AethericFrame`, initialized alongside DevOpsManager.
@@ -156,6 +158,7 @@ class SpellSystemStates(Cleanable):
         "_binding_key_by_index",
         "_risk_manager",
         "_non_resolvable_index_ids",
+        "_late_bind_thread_by_spell_id",
     ]
 
     def __init__(
@@ -210,6 +213,10 @@ class SpellSystemStates(Cleanable):
         # whole under `_lock` (`_publish_non_resolvable_membership_locked`) and
         # read without it (`non_resolvable_index_ids`), so it is never mutated.
         self._non_resolvable_index_ids: FrozenSet[str] = frozenset()
+        # The spell ids an open late bind has marked (SpellState.late_bind_in_progress), each to the id of the
+        # thread binding it. Replaced whole under `_lock` (`_publish_late_bind_mark_locked`) and read without it
+        # (`late_bind_thread_ids`, the meld gate's check), so it is never mutated (#330, 2026-11-23).
+        self._late_bind_thread_by_spell_id: Dict[str, int] = {}
 
     # ------------------------------------------------------------------
     # Cleanup
@@ -323,6 +330,8 @@ class SpellSystemStates(Cleanable):
             # A tombstone, not a delete: `non_resolvable_index_ids` is read without
             # the lock, so a read racing this cleanup must still find a set.
             self._non_resolvable_index_ids = frozenset()
+            # The same for the late-bind map, which the meld gate reads without the lock.
+            self._late_bind_thread_by_spell_id = {}
             del self._frame
             del self._devops_information_registry
             del self._risk_manager
@@ -340,6 +349,7 @@ class SpellSystemStates(Cleanable):
             *,
             resolvable: Optional[bool] = None,
             binding_key: Optional[Tuple[str, str]] = None,
+            late_bind_thread_id: Optional[int] = None,
     ) -> SpellSystemState:
         """
         Ensure a SpellSystemState exists for the given spell index and return it.
@@ -384,6 +394,13 @@ class SpellSystemStates(Cleanable):
           (`mark_dependents_for_revalidation`) reaches the SpellContract
           consumers of a SpellIndex through this key, because a consumer declares
           the key, not an edge to the SpellIndex.
+        - Mark a late bind when `late_bind_thread_id` is given (#330,
+          2026-11-23): the state gains `SpellState.late_bind_in_progress` and the
+          selected spell id is published in `late_bind_thread_ids` with that
+          thread id, in the same locked section, so a meld that can read the
+          state can read the mark. `Spellbook.bind` passes it for a bind after
+          conjure and calls this before its Book maps publish the spell. None
+          leaves an existing mark as it is.
 
         This is intended to be called from Spellbook.bind(...) or equivalent.
 
@@ -403,6 +420,10 @@ class SpellSystemStates(Cleanable):
                 `Spell._key`, the form `SpellContract.canonical_key` takes - or
                 None to keep the recorded key (bind and notch pass it; the
                 ownership transfer's registrations keep the SpellIndex's key).
+            late_bind_thread_id:
+                The id (`threading.get_ident()`) of the thread whose bind window
+                registers this version after its Book was conjured, or None for
+                any other registration.
 
         Returns:
             SpellSystemState:
@@ -410,8 +431,9 @@ class SpellSystemStates(Cleanable):
 
         Raises:
             TypeError:
-                If `resolvable` is neither None nor a bool, or `binding_key` is
-                neither None nor a pair of strings; nothing is registered.
+                If `resolvable` is neither None nor a bool, `binding_key` is
+                neither None nor a pair of strings, or `late_bind_thread_id` is
+                neither None nor an int; nothing is registered.
             RuntimeError:
                 If the index selects no version.
 
@@ -434,6 +456,11 @@ class SpellSystemStates(Cleanable):
             raise TypeError(
                 "register_index(binding_key=...) takes the selected version's normalized (frame_key, binding_key) "
                 f"pair of strings or None; got {binding_key!r}. Pass spell._key for the version the index selects."
+            )
+        if late_bind_thread_id is not None and type(late_bind_thread_id) is not int:
+            raise TypeError(
+                "register_index(late_bind_thread_id=...) takes the binding thread's id (an int, threading.get_ident()) "
+                f"or None; got {type(late_bind_thread_id).__name__}."
             )
         index_id = spell_index.id
         current_id = spell_index.selected_spell_id
@@ -486,6 +513,10 @@ class SpellSystemStates(Cleanable):
             self._publish_non_resolvable_membership_locked(
                 index_id, state.has_flag(SpellState.non_resolvable)
             )
+            if late_bind_thread_id is not None:
+                # The late-bind mark (#330): flag-only on the state, published beside it in the same locked section.
+                state.update_flags(flags_to_add=(SpellState.late_bind_in_progress,))
+                self._publish_late_bind_mark_locked(current_id, late_bind_thread_id)
             gate_was_closed = state.validity is SpellValidity.gated
 
             # Any (re)binding is treated as structural change.
@@ -674,6 +705,125 @@ class SpellSystemStates(Cleanable):
         """
         self.check_cleaned()
         return self._non_resolvable_index_ids
+
+    @property
+    def late_bind_thread_ids(self) -> Dict[str, int]:
+        """
+        Return the spell ids an open late bind has marked, each to the id of the thread binding it.
+
+        Purpose:
+            The meld gate's read (`Meld._refuse_open_late_bind`, #330, 2026-11-23):
+            while a late bind's window is open, a meld on another thread that reaches
+            one of the window's spells is refused, and the binding thread's own melds
+            pass. One lock-free reference read answers both, and an empty map - no
+            late bind open in the frame - answers at once.
+
+        Contract:
+            - Exactly the spell ids whose state carries
+              `SpellState.late_bind_in_progress`: `register_index(...,
+              late_bind_thread_id=...)` adds one in the section that sets the flag,
+              and `clear_late_bind_marks` and `unregister_index` take it out with
+              the flag.
+            - The map is replaced whole, never mutated: the caller may keep the
+              returned map as a snapshot and must not mutate it.
+
+        Returns:
+            Dict[str, int]:
+                Spell id -> binding thread id (`threading.get_ident()`); empty
+                when no late bind is open.
+
+        Raises:
+            RuntimeError:
+                If the registry has been cleaned (`check_cleaned`).
+
+        Threading:
+            Lock-free, one reference read. A read racing a mark or a clear sees the
+            map from before or after it. A late bind publishes its mark before its
+            Book maps publish the spell, so a meld that found the spell reads a map
+            that holds it. A read racing cleanup finds the empty tombstone map.
+        """
+        self.check_cleaned()
+        return self._late_bind_thread_by_spell_id
+
+    def clear_late_bind_marks(self, spell_ids: Iterable[str]) -> None:
+        """
+        End the late-bind marks of the given spell ids: their window is over.
+
+        Purpose:
+            `Spellbook._end_bind_window` calls this when the outermost bind window
+            ends, committed or not, so the window's spells meld like any other again
+            (#330, 2026-11-23).
+
+        Contract:
+            - For each spell id, removes `SpellState.late_bind_in_progress` from the
+              state registered under it (flag-only: no validity changes and nothing
+              is published) and takes the id out of `late_bind_thread_ids`.
+            - An id with no registered state, or not marked, is skipped: a lineage
+              the unwind removed already left both.
+            - The published map is replaced once, after the loop.
+
+        Args:
+            spell_ids:
+                The spell ids the window marked.
+
+        Returns:
+            None.
+
+        Raises:
+            RuntimeError:
+                If the registry has been cleaned (`check_cleaned`).
+
+        Threading:
+            Runs under the registry lock and takes each state's lock under it
+            (registry -> state, the registry's only order).
+        """
+        self.check_cleaned()
+        with self._lock:
+            self.check_cleaned()
+            published = self._late_bind_thread_by_spell_id
+            remaining: Optional[Dict[str, int]] = None
+            for spell_id in spell_ids:
+                state = self._states_by_spell_id.get(spell_id)
+                if state is not None:
+                    state.update_flags(flags_to_remove=(SpellState.late_bind_in_progress,))
+                if spell_id in published:
+                    if remaining is None:
+                        remaining = dict(published)
+                    remaining.pop(spell_id, None)
+            if remaining is not None:
+                self._late_bind_thread_by_spell_id = remaining
+
+    def _publish_late_bind_mark_locked(self, spell_id: str, thread_id: Optional[int]) -> None:
+        """
+        Put one spell id in or out of the published late-bind map; caller holds `_lock`.
+
+        Contract:
+            - An int publishes `spell_id -> thread_id`; None takes the id out.
+            - The map is replaced, never mutated, so a lock-free reader keeps a
+              consistent snapshot; nothing is replaced when it already matches.
+
+        Args:
+            spell_id:
+                The marked version's spell id.
+            thread_id:
+                The binding thread's id, or None to remove the mark.
+
+        Returns:
+            None.
+        """
+        published = self._late_bind_thread_by_spell_id
+        if thread_id is None:
+            if spell_id not in published:
+                return
+            remaining = dict(published)
+            remaining.pop(spell_id, None)
+            self._late_bind_thread_by_spell_id = remaining
+            return
+        if published.get(spell_id) == thread_id:
+            return
+        updated = dict(published)
+        updated[spell_id] = thread_id
+        self._late_bind_thread_by_spell_id = updated
 
     # ------------------------------------------------------------------
     # Internal indexing helpers
@@ -1154,7 +1304,9 @@ class SpellSystemStates(Cleanable):
         - Remove the spell-index entry from `_states_by_index_id`.
         - Remove the current spell id entry from `_states_by_spell_id`.
         - Remove the spell index from `_dirty_indexes`.
-        - Take the SpellIndex out of the published set of flagged spell indexes.
+        - Take the SpellIndex out of the published set of flagged spell indexes,
+          and its current spell id out of the published late-bind map (#330): a
+          lineage a refused late-bind window unwinds leaves no mark behind.
         - Remove the local topology entry for the current spell id.
         - Remove collection/contract indices for the owning spellbook, and
           forget the SpellIndex's binding key.
@@ -1196,6 +1348,7 @@ class SpellSystemStates(Cleanable):
                 if current_spell_id and states_by_spell_id.get(current_spell_id) is not None:
                     states_by_spell_id.pop(current_spell_id, None)
                 if current_spell_id:
+                    self._publish_late_bind_mark_locked(current_spell_id, None)
                     self._forget_resolution_verdicts_locked(
                         current_spell_id,
                         change_reason=SpellStateChangeReason.cleaned_up_spell,
@@ -1205,8 +1358,10 @@ class SpellSystemStates(Cleanable):
                 return None
 
             current_spell_id = removed_state.current_spell_id
-            # A removed SpellIndex is never in the published flagged set.
+            # A removed SpellIndex is never in the published flagged set, nor its spell id in the late-bind map.
             self._publish_non_resolvable_membership_locked(index_id, False)
+            if current_spell_id:
+                self._publish_late_bind_mark_locked(current_spell_id, None)
 
             if current_spell_id and states_by_spell_id.get(current_spell_id) is removed_state:
                 states_by_spell_id.pop(current_spell_id, None)

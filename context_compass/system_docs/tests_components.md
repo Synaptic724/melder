@@ -1273,6 +1273,10 @@ Protects:
   with its key and restore files each row under it, the target's shelf dropped undisposed first; a row with no
   key restores under the bare spell_id, and a key without ':' is its own shelf; the shelves outlive `clear_all`
   and the pool reset and go with cleanup; eight threads filing keys at once leave each key on its shelf once
+- a slot given back undisposed (0.2.8316, #330; `test_creations_forget_slot.py`, 7 tests, a bare store):
+  `forget_slot` takes the slot out of the store's reads, the count, purge and cleanup without running the object's
+  disposal methods; a sibling slot of the spell stays; a key filed again is held and purged afresh; an unknown or
+  already-forgotten key, or a cleaned store, answers False; a key without ':' is its own shelf
 - `Nexus.remove_rift`'s order (`test_nexus_orchestration_and_lifecycle.py`, 18 tests, catalogued 2026-11-08 for its
   `test_nexus_remove_rift_decrements_ref_counts_before_frame_cleanup`, changed for 0.2.8291; the other 17 were not
   read by that pass): over a fake Rift whose `_mark_cleaned_for_removal` records the mark and hands back two frames
@@ -1349,6 +1353,7 @@ Key Files (C1):
 - `tests/unit/melder/aether/test_command_system_spell_id_lookups.py` (room lookups by spell_id, 2026-10-17)
 - `tests/unit/melder/aether/test_lookup_container_repoint.py` (the address compare-and-set, 2026-10-25)
 - `tests/unit/melder/aether/conduit/creations/test_creations_store_slots.py` (slots by binding, 2026-10-25)
+- `tests/unit/melder/aether/conduit/creations/test_creations_forget_slot.py` (a slot given back, 2026-11-23)
 - `tests/unit/melder/aether/test_frame_link_contract_profiles.py` (#271's races, catalogued 2026-11-08)
 - `tests/unit/melder/aether/test_frame_link_runtime_contracts.py` (#271's races, catalogued 2026-11-08)
 - `tests/unit/melder/aether/test_nexus_orchestration_and_lifecycle.py` (`remove_rift`'s order, catalogued 2026-11-08)
@@ -1400,10 +1405,31 @@ Protects:
   dirty worklist; `register_index` keeps the recorded key when given none and replaces it when given one, and
   `unregister_index` and cleanup drop it; `mark_contract_dependents_dirty` walks on from the consumers it marks
   and returns only them; and a walk on a cleaned registry raises the use-after-clean RuntimeError
+- the late-bind marks (0.2.8316, #330; `test_spell_system_states_late_bind_marks.py`, 10 tests, 12 cases, a real
+  registry): a late bind flags its state `late_bind_in_progress` and publishes spell id -> binding thread; a
+  registration without a thread id marks nothing and leaves an open mark as it is; the published map is replaced,
+  never mutated; clearing one mark leaves the others and no validity changes; clearing unknown or unmarked ids
+  does not replace the map; `unregister_index` drops the mark; a thread id that is not an int (a bool included)
+  is refused before anything registers; a cleaned registry refuses the read and the clear; sixteen concurrent
+  late binds each publish their own thread
+- the refused-bind unwind in change control (0.2.8316, #330; `test_change_control_manager_refused_bind_unwind.py`,
+  10 tests, a Spellbook double): through admit and commit, a bind its structural validator refuses - a validation
+  error or any other exception - reaches the Book's unwind once, with its claims still held, and propagates
+  unchanged; a commit-validator refusal, a refused notch and an in-window abort unwind nothing; two refusals unwind
+  once each and leave no record; with no Book the refusal carries a note; the structural validator refuses a
+  staged bind spell already compiled broken after running the uncompiled ones, lets a compiled valid one commit
+  and leaves notch members to their own window
+- the Book-flag refresh (0.2.8316, #330; `test_risk_manager_refresh_spellbook_flag.py`, 4 tests, 5 cases, a real
+  registry): it writes once the flag the risk sets call for, True or False, and changes no risk set; an empty id
+  or an unregistered conduit writes nothing; a cleaned manager refuses
 Key Files (C1):
 - `tests/unit/melder/aether/dev_ops/spell_system_states/test_spell_system_states_non_resolvable.py` (2026-10-16)
 - `tests/unit/melder/aether/dev_ops/risk_manager/test_risk_manager_non_resolvable.py` (2026-10-16)
 - `tests/unit/melder/aether/dev_ops/spell_system_states/test_spell_system_states_dependent_walk.py` (2026-10-16)
+- `tests/unit/melder/aether/dev_ops/spell_system_states/test_spell_system_states_late_bind_marks.py` (2026-11-23)
+- `tests/unit/melder/aether/dev_ops/change_control_manager/test_change_control_manager_refused_bind_unwind.py`
+  (2026-11-23)
+- `tests/unit/melder/aether/dev_ops/risk_manager/test_risk_manager_refresh_spellbook_flag.py` (2026-11-23)
 
 ### Subcomponent: Managed Spell Pools Unit Cluster
 Parent Component: Unit Test Suite
@@ -2108,8 +2134,18 @@ Protects:
   its twin at its bind (A2, A3, A5, A8, A9, I2, G2, G3), `list[English]` gathers nothing (B2, B3, C4) and F2's
   definition stays the only match, while the frame's own consumer wakes; a notch of the framed index to another
   class releases the refused consumer into an unresolved input, the notch back refuses it again and a
-  same-named version keeps it refused (C1, C2); a borrowed English is named by its address as an owned one is.
+  same-named version keeps it refused (C1, C2; since 0.2.8316 the consumer's late bind beside English is refused
+  and undone, #330, so C1 and C2 bind it while French is active and refuse it at the notch back before the notch
+  away releases it); a borrowed English is named by its address as an owned one is.
   Preconditions raise RuntimeError through `_given`, never AssertionError
+- another thread's meld inside an open late-bind window is refused (0.2.8316, #330;
+  `test_conduit_component_meld_refuses_open_late_bind.py`, 4 tests, each in a fresh Aether; the second thread is
+  started and joined inside the window with a bound; written failing first - 3 failed and the binding thread's own
+  meld passed on 0.2.8315): its meld of the late-bound spell raises MeldExecutionError naming the spell and
+  builds after the commit; its meld of a consumer whose recompiled plan reaches the spell (`list[Greeter]`) is
+  refused the same way and builds with every greeter after the commit; it is refused also after the binding
+  thread melded the spell inside the window (the Book flag's pin; with the pin removed, only this test fails); the
+  binding thread's own meld builds
 - the mediator plane as a real slice (`test_aetheric_mediator_component.py`, 15 tests; two assertions follow the
   0.2.8277 values since 2026-11-08): the plane imports nothing from `melder.aether` outside itself and only
   `melder.utilities.general_base.cleanable` from the rest of Melder, read by `ast`; no plain `Lock` in its source
@@ -2201,6 +2237,7 @@ Key Files (C1):
 - `tests/component/melder/aether/conduit/test_conduit_component_refused_cache_save_does_not_fail_meld.py` (2026-10-24)
 - `tests/component/melder/aether/conduit/test_conduit_component_waiting_consumer_wakes_for_its_provider.py`
   (the S1 matrix, 2026-11-07)
+- `tests/component/melder/aether/conduit/test_conduit_component_meld_refuses_open_late_bind.py` (2026-11-23)
 - `tests/component/melder/aether/aetheric_mediator/test_aetheric_mediator_component.py` (catalogued 2026-11-08)
 - `tests/component/melder/aether/aetheric_mediator/test_aetheric_mediator_concurrency_component.py`
   (catalogued 2026-11-08)
@@ -2305,6 +2342,16 @@ Protects:
   naming both indexes and stays parked, selected by its own index; after each refusal the index still selects
   its active version, which holds the frame's address claim and serves a meld by address; a control notch to a
   version staged on the index still moves it
+- a refused late bind is undone (0.2.8316, #330; `test_spellbook_component_failed_late_bind_is_undone.py`, 11
+  tests, each in a fresh Aether with its own dynamic frame; the refusal is HIDDEN_PROVIDER, `ServiceBuilder` bound
+  after conjure only under a spellframe; written failing first - 10 failed and the in-window abort passed on
+  0.2.8315): a lone refused late bind leaves nothing under its spell_id and its retry is refused again, not as a
+  collision, both with the undone note; fixed, it binds and melds; a refused window undoes its good mate, which
+  binds again; an existing object leaves its store slot undisposed and binds again as the same object; a managed
+  spell leaves no pool; a parked `bind_inactive` mate goes and can be staged again; a Book the unwind empties
+  keeps the frame's view of its later spell ids; an in-window abort keeps its spells; a consumer refused because
+  of a window spell is re-gated and one the binding thread compiled against it is flagged; and the commit refuses
+  a spell the binding thread compiled broken inside its window
 Key Files (C1):
 - `tests/component/melder/spellbook/test_spellbook_component_bind.py`
 - `tests/component/melder/spellbook/test_spellbook_component_configuration.py`
@@ -2323,6 +2370,7 @@ Key Files (C1):
 - `tests/component/melder/spellbook/test_spellbook_component_staged_version_keeps_active_signature.py` (2026-10-19)
 - `tests/component/melder/spellbook/test_spellbook_component_index_keeps_its_first_binding.py` (2026-10-25)
 - `tests/component/melder/spellbook/test_spellbook_component_notch_seam_checks_incoming_first.py` (2026-11-08)
+- `tests/component/melder/spellbook/test_spellbook_component_failed_late_bind_is_undone.py` (2026-11-23)
 
 ### Subcomponent: Spellbook Compiler Component Cluster
 Parent Component: Component Test Suite
@@ -2654,8 +2702,11 @@ Protects:
   18 tests, 117 cases, whole report texts): six placements of English - a Protocol frame with and without a
   binding name, a category with and without one, bare under a binding name, two frames - asked for by a class,
   string, `Optional[English]` or `SpellMap(English)` consumer (and a named SpellMap where a framed English
-  carries that name) refuse conjure in automatic and dynamic worlds, and a late bind and every meld, with an
-  override as without; `list[English]` refuses an automatic conjure and is injected [] with Phase 6's WARNING
+  carries that name) refuse conjure in automatic and dynamic worlds, and a late bind, which since 0.2.8316 (#330)
+  is undone, so nothing stays under its spell_id and a retry is refused again (until then the consumer stayed
+  registered and every meld of it was refused, an override as without); 6a, 6b, finding d and the cleanup ruling
+  reach their registered refused consumer through the ORDER path of 6c (`_refused_by_arrival`);
+  `list[English]` refuses an automatic conjure and is injected [] with Phase 6's WARNING
   in a dynamic world; controls: English bound bare, alone or beside a framed version, a named SpellMap reaching
   English bare under that name, nothing bound (where, since 0.2.8303, the `SpellMap(English)` consumer conjures and
   waits as an unresolved input, #329); re-gate paths 6a, 6b and 6c with its ORDER control;
@@ -2761,10 +2812,11 @@ Protects:
   makes a parked version grant active again (one pass; a linked peer that never borrowed it gains nothing), and
   a grant of a parked version becomes active when the lender notches to it; dependents one and two hops from a
   notched dependency build its new version whichever end melds first (C1-C3); C4, a class annotation of an index
-  filed under the category "Dep", is refused with HIDDEN_PROVIDER since 0.2.8281 - at conjure, at a late bind
-  and at every meld while Dep is active - released into an UnresolvedInputError (an override supplies Dep) by a
-  notch to Dep2, another class, and refused again after the notch back, while `SpellMap(spellframe="Dep")`
-  follows the index d1, d2, d1 (corrected 2026-11-08; this entry read "or raise the first meld's error when the
+  filed under the category "Dep", is refused with HIDDEN_PROVIDER since 0.2.8281 - at conjure, and at a late bind
+  while Dep is active, which since 0.2.8316 (#330) is undone; bound while Dep2 is active, PClass melds as an
+  UnresolvedInputError (an override supplies Dep), is refused at its meld after the notch back, released by the
+  next notch to Dep2 (6b) and refused again after the notch back, while `SpellMap(spellframe="Dep")`
+  follows the index d1, d2, d1, d2, d1 (corrected 2026-11-08; this entry read "or raise the first meld's error when the
   annotation does not select it", and 0.2.8278 had made it an unresolved input before, after and back); a
   contract consumer's dependent compiled before the link resolves the linked provider;
   a dependency notch in the lending Book reaches the borrower's dependents; and four threads melding
@@ -3261,9 +3313,11 @@ Key Files (C1):
   verified_at: 2026-11-02T12:02:57Z
 - path: `tests/unit/melder/aether/dev_ops/spell_system_states/test_spell_state_strenum_657.py`
   start_line: 1
-  end_line: 75
-  loc: 75
-  verified_at: 2026-11-02T12:02:57Z
+  end_line: 85
+  loc: 85
+  verified_at: 2026-11-23T10:55:43Z
+  note: SpellState's names, legacy numbers and old pickles; since 0.2.8316 it pins `late_bind_in_progress`
+    declared after the numeric era's members, with no number (#330; it read 75).
 - path: `tests/unit/melder/aether/dev_ops/change_control_manager/test_devops_transaction_type_strenum_657.py`
   start_line: 1
   end_line: 214
@@ -3921,9 +3975,9 @@ that cannot be remeasured, and it was NOT the union of the Key Files lists.
   verified_at: 2026-09-26T22:11:36Z
 - path: `tests/unit/melder/spellbook/test_spellbook.py`
   start_line: 1
-  end_line: 5659
-  loc: 5659
-  verified_at: 2026-11-08T12:43:38Z
+  end_line: 5665
+  loc: 5665
+  verified_at: 2026-11-23T10:55:43Z
   note: remeasured 2026-11-08 (it read 5605): the lanes of 0.2.8276 onward added cases this map does not
     describe yet.
 - path: `tests/unit/melder/spellbook/test_spell.py`
@@ -4109,9 +4163,9 @@ that cannot be remeasured, and it was NOT the union of the Key Files lists.
   verified_at: 2026-09-26T22:11:36Z
 - path: `tests/component/melder/spellbook/test_spellbook_component_spellbook.py`
   start_line: 1
-  end_line: 1715
-  loc: 1715
-  verified_at: 2026-10-16T17:07:35Z
+  end_line: 1728
+  loc: 1728
+  verified_at: 2026-11-23T10:55:43Z
 - path: `tests/component/melder/spellbook/test_spellbook_component_caching_system.py`
   start_line: 1
   end_line: 675
@@ -4950,9 +5004,9 @@ that cannot be remeasured, and it was NOT the union of the Key Files lists.
     (0.2.8254).
 - path: `tests/integration/melder/conduit/test_conduit_integration_notch_revalidation.py`
   start_line: 1
-  end_line: 858
-  loc: 858
-  verified_at: 2026-11-08T12:43:38Z
+  end_line: 874
+  loc: 874
+  verified_at: 2026-11-23T10:55:43Z
   note: contract consumers and dependents following notches, grants and uncontracts; the
     meld-vs-notch race as a non-strict xfail (0.2.8250). Rewritten for S1 and S2 (0.2.8257-0.2.8258).
     Rewritten for one binding per index (0.2.8273). Remeasured 2026-11-08 (it read 778): the race test carries
@@ -5221,9 +5275,9 @@ that cannot be remeasured, and it was NOT the union of the Key Files lists.
     three members, CLEANED among them (catalogued 2026-11-08).
 - path: `tests/component/melder/aether/conduit/test_conduit_component_waiting_consumer_wakes_for_its_provider.py`
   start_line: 1
-  end_line: 954
-  loc: 954
-  verified_at: 2026-11-08T14:40:42Z
+  end_line: 969
+  loc: 969
+  verified_at: 2026-11-23T10:55:43Z
   note: the S1 matrix: a waiting consumer and its late twin give one answer - a bare provider wakes both, a
     framed one refuses both with HIDDEN_PROVIDER - across binds, notches and grants (0.2.8281).
 - path: `tests/component/melder/aether/aetheric_mediator/test_aetheric_mediator_component.py`
@@ -5284,9 +5338,9 @@ that cannot be remeasured, and it was NOT the union of the Key Files lists.
     and links across frames are refused (0.2.8279-0.2.8280).
 - path: `tests/integration/melder/spellbook/test_class_lookup_hidden_by_a_frame_is_refused_integration.py`
   start_line: 1
-  end_line: 841
-  loc: 841
-  verified_at: 2026-11-16T20:46:17Z
+  end_line: 862
+  loc: 862
+  verified_at: 2026-11-23T10:55:43Z
   note: the hidden-provider probe matrix as whole-text regressions, its controls and re-gate paths, and five
     strict xfails on GitHub #210 (0.2.8281).
 - path: `tests/integration/melder/spellbook/test_spellmap_consumer_waits_for_its_provider_integration.py`
@@ -5358,6 +5412,54 @@ that cannot be remeasured, and it was NOT the union of the Key Files lists.
   verified_at: 2026-11-09T11:20:47Z
   note: RiftGate and RiftGateController contracts, catalogued at 0.2.8301 when its counts became threads inside and
     its drain tests moved their ticket to another thread (12 tests).
+
+- path: `tests/unit/melder/aether/dev_ops/spell_system_states/test_spell_system_states_late_bind_marks.py`
+  start_line: 1
+  end_line: 180
+  loc: 180
+  verified_at: 2026-11-23T10:55:43Z
+  note: the late-bind marks of SpellSystemStates: the flag and the published map, their clear and the unregistration
+    that drops them, the thread-id type check, cleanup and sixteen concurrent marks (0.2.8316, #330; 10 tests,
+    12 cases; written failing first).
+- path: `tests/unit/melder/aether/conduit/creations/test_creations_forget_slot.py`
+  start_line: 1
+  end_line: 130
+  loc: 130
+  verified_at: 2026-11-23T10:55:43Z
+  note: `Creations.forget_slot` gives a slot back without disposing its object: siblings stay, the key files afresh,
+    an unknown key or a cleaned store answers False (0.2.8316, #330; 7 tests; written failing first).
+- path: `tests/unit/melder/aether/dev_ops/change_control_manager/test_change_control_manager_refused_bind_unwind.py`
+  start_line: 1
+  end_line: 285
+  loc: 285
+  verified_at: 2026-11-23T10:55:43Z
+  note: the refusal record and the default abort hook: only a structurally refused bind unwinds, once, with its
+    claims held; the already-broken refusal of a staged bind spell (0.2.8316, #330; 10 tests; written failing
+    first, five guards pass before and after).
+- path: `tests/unit/melder/aether/dev_ops/risk_manager/test_risk_manager_refresh_spellbook_flag.py`
+  start_line: 1
+  end_line: 154
+  loc: 154
+  verified_at: 2026-11-23T10:55:43Z
+  note: `RiskManager.refresh_spellbook_flag` writes the flag the risk sets call for, changes no risk set and writes
+    nothing for an unregistered conduit (0.2.8316, #330; 4 tests, 5 cases; written failing first).
+- path: `tests/component/melder/spellbook/test_spellbook_component_failed_late_bind_is_undone.py`
+  start_line: 1
+  end_line: 809
+  loc: 809
+  verified_at: 2026-11-23T10:55:43Z
+  note: a late bind refused at its commit is undone - lone, with a good mate, an existing object, a managed spell,
+    a parked mate, a Book it empties - an in-window abort keeps its spells, refused and compiled consumers are
+    re-gated, and the commit refuses a spell compiled broken in its window (0.2.8316, #330; 11 tests; written
+    failing first).
+- path: `tests/component/melder/aether/conduit/test_conduit_component_meld_refuses_open_late_bind.py`
+  start_line: 1
+  end_line: 398
+  loc: 398
+  verified_at: 2026-11-23T10:55:43Z
+  note: another thread's meld of a late-bound spell, or of a consumer whose new plan reaches one, is refused until
+    the bind commits - also after the binding thread melded it (the flag pin); the binding thread's own meld
+    builds (0.2.8316, #330; 4 tests; written failing first).
 
 ## Diagrams
 ### ASCII Component Diagram (C3/C2)
@@ -5690,6 +5792,16 @@ graph TD
 - `tests/_nexus_viewer_matrix_support.py`
 - `src/melder/nexus/rift/rift_gate/rift_gate.py`
 - `src/melder/nexus/rift/frame_viewer/frame_viewer.py`
+- The undone refused late bind (0.2.8316, #330):
+  - `tests/unit/melder/aether/dev_ops/spell_system_states/test_spell_system_states_late_bind_marks.py`
+  - `tests/unit/melder/aether/conduit/creations/test_creations_forget_slot.py`
+  - `tests/unit/melder/aether/dev_ops/change_control_manager/test_change_control_manager_refused_bind_unwind.py`
+  - `tests/unit/melder/aether/dev_ops/risk_manager/test_risk_manager_refresh_spellbook_flag.py`
+  - `tests/component/melder/spellbook/test_spellbook_component_failed_late_bind_is_undone.py`
+  - `tests/component/melder/aether/conduit/test_conduit_component_meld_refuses_open_late_bind.py`
+  - `src/melder/aether/spellbook/spellbook.py`
+  - `src/melder/aether/conduit/meld/meld.py`
+  - `src/melder/aether/aetheric_frame/dev_ops/change_control_manager/change_control_manager.py`
 
 ## Open Questions
 - ANSWERED 2026-09-26 (was: whether future external CI/docs should describe a

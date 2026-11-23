@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/aetheric_frame/dev_ops/risk_manager/risk_manager.py",
- "source_sha256": "734df5a19f3c5b4f7bd96f8dcad32e3a5d902e5466b37dd2a298df08a4a8438c",
+ "source_sha256": "402ff96199b59a23568dc6b129d95b3ea8253b9d2eea58653b5935edd38d9b69",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.aetheric_frame.dev_ops.risk_manager.risk_manager": {
@@ -62,23 +62,25 @@
     "devops_information_registry",
     "on_resolution_validity_change",
     "on_structural_validity_change",
+    "refresh_spellbook_flag",
     "register_conduit",
     "register_spell",
     "unregister_conduit",
     "unregister_spell"
    ],
    "shape": {
-    "method_count": 19,
+    "method_count": 20,
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "bdc0a822bd5c674db994eae7914c64109be44d00f026cb9c911ca4a77facb877",
+   "span_sha256": "2b49d009b95ece12103c3c1875ed4cce7a8fd34f4280af199cbb9250d103ac3a",
    "role": "Conduit-local risk aggregator for validation gating.",
    "responsibilities": [
     "tracks structural and resolution risk per conduit",
     "reacts to validity changes from spell-system state",
     "pushes validation-required flags back onto spellbooks",
-    "leaves a lineage flagged SpellState.non_resolvable out of the Book flag with one subset test against SpellSystemStates.non_resolvable_index_ids, while its risk stays tracked, and register_conduit seeds every visible spell before refreshing the flag once (0.2.8247)"
+    "leaves a lineage flagged SpellState.non_resolvable out of the Book flag with one subset test against SpellSystemStates.non_resolvable_index_ids, while its risk stays tracked, and register_conduit seeds every visible spell before refreshing the flag once (0.2.8247)",
+    "recomputes a conduit's Book flag on request, without a risk event (refresh_spellbook_flag), as the end of a late-bind window asks (#330, 0.2.8316)"
    ],
    "owns_state": [
     "_conduit_states",
@@ -90,7 +92,7 @@
     "runtime",
     "cleanup"
    ],
-   "semantics_authored_against": "4889eea22f972958b926b107311245f5aa30caa48d7bdc50d1f806e2a2308e18"
+   "semantics_authored_against": "2b49d009b95ece12103c3c1875ed4cce7a8fd34f4280af199cbb9250d103ac3a"
   }
  },
  "edges_out": [

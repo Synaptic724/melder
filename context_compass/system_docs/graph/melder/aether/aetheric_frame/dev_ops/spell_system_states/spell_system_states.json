@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_system_states.py",
- "source_sha256": "ceb93228b567a76dcb6966a2a2be2296038bb47035e61d11adee1a7a69497094",
+ "source_sha256": "4813647114763e25e08d6645aa8d2ad515de8a0fd84a6c18bf25b9112041091b",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states": {
@@ -30,6 +30,7 @@
     "cleanup",
     "clear_conduit_diagnostics",
     "clear_conduit_dirty",
+    "clear_late_bind_marks",
     "compute_impact_closure",
     "consume_dirty_indexes",
     "devops_information_registry",
@@ -44,6 +45,7 @@
     "index_has_flag",
     "iter_conduit_resolution_states",
     "iter_states",
+    "late_bind_thread_ids",
     "mark_collection_dependents_dirty",
     "mark_conduit_dirty",
     "mark_contract_dependents_dirty",
@@ -60,11 +62,11 @@
     "update_dependencies"
    ],
    "shape": {
-    "method_count": 43,
+    "method_count": 46,
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "4a67e0aa14e0c6fad658045217fa954dfa51e489737f296196d9dc4171a77df5",
+   "span_sha256": "8924da22c50d3d4a8dd87ca5c3b68e164499a0c5dafbaac3fae4025385bf433e",
    "role": "Per-frame lineage and resolution state registry.",
    "responsibilities": [
     "owns lineage state by index id and spell id",
@@ -77,7 +79,8 @@
     "watches AMBIGUOUS_INPUT sockets by frame key like UNRESOLVED_INPUT ones, so a bind or removal of a same-keyed spell re-gates the consumer (0.2.8224)",
     "records the selected version's capability as SpellState.non_resolvable in register_index before the gate publishes - re-publishing the validity when the write changed the flag on a lineage already gated - and publishes the flagged lineages as one frozenset (non_resolvable_index_ids) that RiskManager reads without a lock (0.2.8247)",
     "records the binding key of each lineage's selected version in register_index (binding_key=..., kept when None, dropped by unregister_index and cleanup) and marks everything downstream of given lineages for revalidation - a lineage reached by a registry edge, frame-wide, as gated, impacted_by_dependency and transitively dirty; a SpellContract consumer, in any Book, of a reached lineage's binding key as gated + contract_unvalidated - visiting each lineage once and never a seed (mark_dependents_for_revalidation); mark_contract_dependents_dirty walks on the same way from the consumers it marks (0.2.8250)",
-    "also watches an UNRESOLVED_INPUT socket under its hidden_frame_keys, so a change announced at a hidden candidate's address (a notch of that index, for instance) re-gates the consumer Phase 4 refused (0.2.8281)"
+    "also watches an UNRESOLVED_INPUT socket under its hidden_frame_keys, so a change announced at a hidden candidate's address (a notch of that index, for instance) re-gates the consumer Phase 4 refused (0.2.8281)",
+    "marks a late bind (register_index(late_bind_thread_id=...)): flags the state late_bind_in_progress and publishes spell id -> binding thread id in late_bind_thread_ids, a dict replaced whole under its lock and read without it; clear_late_bind_marks and unregister_index take the mark away (#330, 0.2.8316)"
    ],
    "owns_state": [
     "_states_by_index_id",
@@ -91,7 +94,8 @@
     "_contract_keys_by_index",
     "_contract_dependents_by_spellbook",
     "_non_resolvable_index_ids",
-    "_binding_key_by_index"
+    "_binding_key_by_index",
+    "_late_bind_thread_by_spell_id"
    ],
    "phases": [
     "init",
@@ -99,7 +103,7 @@
     "runtime",
     "cleanup"
    ],
-   "semantics_authored_against": "9bd2f16fff1795f72b2725c1a65101bea262760a0ff098134b3fe43cc9b4e52b"
+   "semantics_authored_against": "8924da22c50d3d4a8dd87ca5c3b68e164499a0c5dafbaac3fae4025385bf433e"
   }
  },
  "edges_out": [

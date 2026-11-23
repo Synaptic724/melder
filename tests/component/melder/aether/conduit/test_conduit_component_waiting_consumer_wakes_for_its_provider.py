@@ -689,13 +689,15 @@ def test_class_consumer_refused_for_a_framed_index_is_released_by_a_notch_away_a
         to English, then to `Edited.English`, another class named English.
 
     Contract (patch hidden_provider_2026_11_07): `ByClass` bound beside the framed English before conjure refuses the
-        conjure - HIDDEN_PROVIDER, naming the address; bound after conjure it is refused at its bind and at its meld
-        while English is active. The notch to French announces the index's frame, which the refused `ByClass` watches
-        through its hidden candidate's address (re-gate path 6b): it melds as an unresolved input again - nothing
-        registered provides English, and an override supplies it. The notch back announces English's name (D1 = B,
-        path 6c): `ByClass` is refused again at its next meld, as its late twin is at its bind. `Edited.English`, the
-        same name, keeps it refused. The frame's own consumer (`Greeter`, `list["langs"]`) follows the index
-        throughout: English, French, English, Edited.English.
+        conjure - HIDDEN_PROVIDER, naming the address; bound after conjure while English is active it is refused at
+        its bind, and the refused bind is undone (#330, 0.2.8316 - until then it stayed registered and refused at
+        every meld). Bound while French is active, its class lookup reaches nothing: it binds as an unresolved input -
+        nothing registered provides English, and an override supplies it. The notch back announces English's name
+        (D1 = B, path 6c): `ByClass` is refused at its next meld, as its late twin is at its bind. The next notch to
+        French announces the index's frame, which the refused `ByClass` watches through its hidden candidate's address
+        (re-gate path 6b): it melds as an unresolved input again; the notch back refuses it again. `Edited.English`,
+        the same name, keeps it refused. The frame's own consumer (`Greeter`, `list["langs"]`) follows the index
+        throughout: English, French, English, French, English, Edited.English.
     """
     frame_consumer = FRAME_CONSUMERS[shape]
     report = _hidden_provider_report("ByClass", HIDDEN_AT[shape])
@@ -717,18 +719,31 @@ def test_class_consumer_refused_for_a_framed_index_is_released_by_a_notch_away_a
     _given(_melded(root, frame_consumer), _frame_holds(frame_consumer, "English"),
            f"{frame_consumer.__name__} with English active")
     assert _refusal(lambda: _bind(root, ByClass)) == report, "ByClass is not refused at its bind"
-    assert _refusal(lambda: root.meld(ByClass)) == report, "ByClass is not refused at its meld with English active"
+    with pytest.raises(KeyError, match="No spell found"):
+        root.meld(ByClass)
     root.notch_spell(spell_index=index, spell_id=french_id)
     _given(_melded(root, frame_consumer), _frame_holds(frame_consumer, "French"),
            f"{frame_consumer.__name__} with French active")
+    _bind(root, ByClass)
+    unsupplied = _unsupplied(root, ByClass)
+    assert unsupplied == _nothing_provides("ByClass"), (
+        "ByClass, bound while French is active, does not meld as an unresolved input"
+    )
+    supplied = type(root.meld(ByClass, override={"greeter": English()}).greeter).__qualname__
+    assert supplied == "English", f"the unresolved ByClass melds {supplied} with English supplied"
+    root.notch_spell(spell_index=index, spell_id=english_id)
+    _late_twin_resolves(root, frame_consumer, _frame_holds(frame_consumer, "English"))
+    assert _refusal(lambda: root.meld(ByClass)) == report, "ByClass is not refused after the notch back"
+    root.notch_spell(spell_index=index, spell_id=french_id)
+    _given(_melded(root, frame_consumer), _frame_holds(frame_consumer, "French"),
+           f"{frame_consumer.__name__} with French active again")
     released = _unsupplied(root, ByClass)
     assert released == _nothing_provides("ByClass"), (
         "the notch of the hidden provider's index to French did not release ByClass into an unresolved input"
     )
-    supplied = type(root.meld(ByClass, override={"greeter": English()}).greeter).__qualname__
-    assert supplied == "English", f"the released ByClass melds {supplied} with English supplied"
     root.notch_spell(spell_index=index, spell_id=english_id)
-    _late_twin_resolves(root, frame_consumer, _frame_holds(frame_consumer, "English"))
+    _given(_melded(root, frame_consumer), _frame_holds(frame_consumer, "English"),
+           f"{frame_consumer.__name__} with English active again")
     assert _refusal(lambda: root.meld(ByClass)) == report, "ByClass is not refused again after the notch back"
     assert _refusal(lambda: _bind(root, LateByClass)) == _hidden_provider_report("LateByClass", HIDDEN_AT[shape]), (
         "LateByClass, bound after the notch back, is not refused at its bind"

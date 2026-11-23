@@ -397,6 +397,40 @@ class RiskManager(Cleanable):
 
         self._refresh_spellbook_flag(conduit_id)
 
+    def refresh_spellbook_flag(self, conduit_id: str) -> None:
+        """
+        Recompute and push the owning Spellbook's validation-required flag for one conduit.
+
+        Purpose:
+            The public form of `_refresh_spellbook_flag`, for a Spellbook whose own
+            state changed what the flag must be without a risk event: the end of a
+            late-bind window, which held the flag up while it was open (#330,
+            2026-11-23), asks for a refresh so the flag drops when nothing else
+            keeps it up.
+
+        Contract:
+            - Reads the conduit's risk sets and writes the Book flag exactly as
+              every risk event's refresh does; changes no risk set.
+            - Does nothing for an empty id or a conduit with no bucket.
+
+        Args:
+            conduit_id: Conduit whose Spellbook flag is recomputed.
+
+        Returns:
+            None.
+
+        Raises:
+            RuntimeError: If this RiskManager has been cleaned.
+
+        Threading:
+            As `_refresh_spellbook_flag`: the sets are read under the manager lock
+            and the Book's setter runs outside every lock.
+        """
+        self.check_cleaned()
+        if not conduit_id:
+            return
+        self._refresh_spellbook_flag(conduit_id)
+
     def on_structural_validity_change(self, lineage_id: str, validity: Optional[SpellValidity]) -> None:
         """
         Update risk when structural validity changes for a SpellIndex.

@@ -2803,8 +2803,10 @@ def test_bind_after_conjure_preserves_ownership_and_registrations(monkeypatch):
     risk_calls = []
     register_single_calls = []
     sb._spell_system_states = types.SimpleNamespace(
-        register_index=lambda spell_index, owner_spellbook_id=None, resolvable=None, binding_key=None: (
-            lineage_calls.append((spell_index, new_spell, resolvable))
+        register_index=(
+            lambda spell_index, owner_spellbook_id=None, resolvable=None, binding_key=None, late_bind_thread_id=None: (
+                lineage_calls.append((spell_index, new_spell, resolvable))
+            )
         )
     )
     sb._register_spell_with_risk_manager = (
@@ -2874,7 +2876,11 @@ def test_bind_after_conjure_stamps_resolution_required_false(monkeypatch):
     sb._assert_lookup_key_available = lambda **kwargs: None
     sb._add_hooks_to_spell = lambda spell, **kwargs: None
     sb._spell_system_states = types.SimpleNamespace(
-        register_index=lambda spell_index, owner_spellbook_id=None, resolvable=None, binding_key=None: None
+        register_index=(
+            lambda spell_index, owner_spellbook_id=None, resolvable=None, binding_key=None, late_bind_thread_id=None: (
+                None
+            )
+        )
     )
     sb._register_spell_with_risk_manager = lambda conduit_id, spell: None
 

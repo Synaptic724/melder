@@ -453,8 +453,8 @@ External interfaces are Python APIs:
     `_check_spell_argument`, `_owned_spell_by_id`, `_resolve_spell_to_move`)
   - src/melder/aether/conduit/conduit.py:6128, 6226 (`add_to_spell_index`; starts it)
   - src/melder/aether/conduit/conduit.py:6249, 6324 (`remove_from_spell_index`; starts it)
-  - src/melder/aether/spellbook/spellbook.py:4829 (`_add_to_spell_index` entry)
-  - src/melder/aether/spellbook/spellbook.py:4867 (`_apply_add_to_index` seam)
+  - src/melder/aether/spellbook/spellbook.py:4852 (`_add_to_spell_index` entry)
+  - src/melder/aether/spellbook/spellbook.py:4890 (`_apply_add_to_index` seam)
 - `Spellbook.find_spell_by_spell_id(spell_id)` and `Conduit.get_spell_by_spell_id(spell_id,
   aetheric_frame_name="default")` (0.2.8253; renamed from `find_spell_by_id` and `get_spell_by_id`, with no
   alias): the spell a spell_id names - the active version, else the parked one - or None from the Book, and
@@ -579,7 +579,7 @@ disposed, since the conduit's check is refused and the index keeps its active ve
 incoming version fails its structural check is undone inside the window and refused, its borrowers untouched
 (0.2.8262). Every version of an index is bound the way its first version was, so a notch moves which version
 serves the index's address, never the address, and refuses an address another spell holds (0.2.8273).
-EVIDENCE: src/melder/aether/spellbook/spellbook.py:4190-5207 (the three seams, remeasured 2026-11-08 at 0.2.8285);
+EVIDENCE: src/melder/aether/spellbook/spellbook.py:4213-5230 (the three seams, remeasured 2026-11-08 at 0.2.8285);
 `src/melder/aether/conduit/conduit.py:Conduit.notch_spell`, `Conduit._owned_notch_target` (the target check),
 `Conduit._resolve_spell_to_move` (the index moves' spell_id), `Conduit._deactivate_borrowed_spell`,
 `Conduit._activate_borrowed_spell` and
@@ -748,13 +748,26 @@ EVIDENCE: src/melder/aether/spellbook/spellbook.py:4190-5207 (the three seams, r
    - The spell_id is the SHA256 of the target's code (`SpellCodeDigest`, 0.2.8257), nothing from the bind
      call; the Spell builds its binding manifest and binding hash from the bind call (0.2.8258).
    - Bind activation receives the actual new Spell before profile completion and publication.
-   - Spellbook registers spell maps and SpellSystemStates lineage.
+   - Spellbook registers the SpellSystemStates lineage, then publishes the spell maps (the lineage first since
+     0.2.8316). After conjure - a late bind - it first pins the Book's validation flag up and registers the lineage
+     marked `SpellState.late_bind_in_progress` with the binding thread's id, so a meld on another thread that can
+     find the spell takes the validation lane and is refused there until the window ends (Sequence: Meld-Time
+     Validation Gate, step 10).
    - If Conduit exists, stamps ownership and registers existing objects.
    - Captured post callbacks receive the registered Spell after normal publication, before outer commit.
      Inactive binding follows the same stages and supplies the final parked Spell to post. Right after its
      collision check, before the hooks and any registration, it checks that the target index is live and this
      Book's (RuntimeError) and that it admits the version (`SpellIndex.check_admits`, ValueError; 0.2.8273), so a
      refusal leaves nothing registered.
+2. The window's commit (its outermost end) runs Phases 1-4 on a late bind's staged spells (the change-control
+   structural validator), and refuses a staged spell the binding thread already compiled broken. A refusal is
+   undone in the change-control abort slot, on the committing thread and before the window's claims are released
+   (`Spellbook._unwind_refused_bind_window`, 0.2.8316, #330): every spell the window bound - active and parked -
+   leaves every registry, an existing object leaves its store slot undisposed, a managed pool the bind composed is
+   discarded, the spells compiled against the window's spells are flagged for revalidation, and the error propagates
+   with its type and text and a note naming what was undone. A window body that raises unwinds nothing.
+3. The window's end, committed or not, clears the late-bind marks still registered, drops the flag pin and has the
+   RiskManager recompute the flag (`Spellbook._end_bind_window`).
 
 ### Sequence: Conjure Conduit
 1. `Spellbook.conjure(...)`:
@@ -851,7 +864,9 @@ EVIDENCE: src/melder/aether/spellbook/spellbook.py:4190-5207 (the three seams, r
    except one whose state carries `SpellState.non_resolvable` - a lineage whose selected version was bound
    resolvable=False, which every meld door refuses before this gate (0.2.8247). Such a definition never receives
    a resolution verdict, so until 0.2.8247 one of them kept the flag up for the Book's life and sent every meld
-   of the Book through steps 1-3.
+   of the Book through steps 1-3. While a late bind of the Book is open the flag is pinned up whatever the
+   RiskManager computes (`Spellbook._set_spellbook_validation_required`, 0.2.8316), so no meld of the Book takes a
+   warm door before step 10 has checked it.
 8. A satisfied SpellContract is not checked on every meld (0.2.8250, rule 2). A change of the provider a contract
    consumer resolves marks the consumer `gated` + `contract_unvalidated` - the borrower Book's contracted-map
    mutators (`Spellbook._mark_contract_dependents_dirty`) and a notch's downstream walk do - so step 2 is its
@@ -872,6 +887,16 @@ EVIDENCE: src/melder/aether/spellbook/spellbook.py:4190-5207 (the three seams, r
    (CreationContext cleaned, Phase 5+ artifacts cleared, `resolution_required`), so its own next meld runs its
    full target pass. A dependent two hops from a notch thus compiles over its dependency's current structure
    instead of a version id the notch parked.
+10. The late-bind refusal (0.2.8316, #330; the owner's rule of 2026-11-22: no wait, the caller retries). A spell
+   another thread is late-binding - its id in `SpellSystemStates.late_bind_thread_ids`, read lock-free - is refused
+   with MeldExecutionError "'<name>' (spell_id <id>) is being late-bound by another thread ... Meld again once that
+   bind finishes" before anything is compiled or built from it: at the gate's entry, at the deferred lane's entry,
+   for each dependency the catch-up of step 9 visits (the error then names the melded spell first), and, when a
+   compile follows the structural branch, for each dependency of the plan it is about to expand
+   (`Meld._refuse_planned_late_binds`). The binding thread passes everywhere, so its window can meld what it binds.
+   With no late bind open in the frame each check is one empty-map read. Known limit: a consumer the binding thread
+   itself compiled over a window spell serves its plan to other threads' warm melds until the window ends; after a
+   refusal the unwind's edge closure flags it.
 
 ### Sequence: Create Lesser Conduit
 1. Parent Conduit fires pre-create hook.
@@ -1019,10 +1044,10 @@ EVIDENCE: src/melder/aether/spellbook/spellbook.py:4190-5207 (the three seams, r
    EVIDENCE:
    - `src/melder/aether/spellbook/spellbook.py:Spellbook._notch_spell`, `Spellbook._check_notched_version`,
      `Spellbook._revert_refused_notch` (step 6)
-   - src/melder/aether/spellbook/spellbook.py:4190-4555 (`_apply_notch`, `_refuse_unparked_incoming`,
+   - src/melder/aether/spellbook/spellbook.py:4213-4578 (`_apply_notch`, `_refuse_unparked_incoming`,
      `_refuse_taken_address`; remeasured 2026-11-08 at 0.2.8285)
-   - src/melder/aether/spellbook/spellbook.py:4867-4972
-   - src/melder/aether/spellbook/spellbook.py:5087-5207
+   - src/melder/aether/spellbook/spellbook.py:4890-4995
+   - src/melder/aether/spellbook/spellbook.py:5110-5230
    - src/melder/aether/aetheric_frame/lookup_container.py:157-201 (`LookupContainer.repoint`)
    - src/melder/aether/conduit/conduit.py:5711-5906
    - src/melder/aether/conduit/conduit.py:5908-6126
@@ -1031,7 +1056,7 @@ EVIDENCE: src/melder/aether/spellbook/spellbook.py:4190-5207 (the three seams, r
    - src/melder/aether/conduit/conduit.py:6479-6522
    - src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/strategies/notch_transaction_strategy.py:239-269
    - src/melder/aether/conduit/conduit_ward/conduit_ward.py:2322-2387
-   - src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_system_states.py:921-1036
+   - src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_system_states.py:1071-1186
 
 ### Sequence: Change-Control Revalidation
 1. `ChangeControlManager.revalidate_dirty_roots(conduit_id, ...)`:
@@ -1209,8 +1234,10 @@ each entry in `src_components.md`; this list is the set that crosses components.
   address it means, as shown, or bind English bare." - and `RequiredHolesStrategy` skips those sockets, so no
   UNRESOLVED_INPUT warning says nothing provides them. The error is an ordinary user-fixable one (not internal,
   gating, restating or superseded) and marks the spell broken: conjure raises SpellbookValidationError; a late bind
-  into a dynamic world raises it and the spell stays registered and refused; every meld of it raises the same report
-  at the meld gate, with or without an override. Every report renders a candidate through `HiddenProviderReport` as
+  into a dynamic world raises it and the refused bind is undone (0.2.8316, #330; until then the spell stayed
+  registered and refused); every meld of a registered spell refused so, one compiled before its class arrived
+  hidden, raises the same report at the meld gate, with or without an override. Every report renders a candidate
+  through `HiddenProviderReport` as
   "<Name> at (spellframe=..., binding_name=...) - use <lookup>", in address order; a candidate the Book owns or
   borrows renders alike (`HiddenProviderStrategy._find_candidate`: `Spellbook.find_spell_by_spell_id`, then the
   borrowed copies peer by peer through `Spellbook._find_contracted_spell_by_id`, lock-free), and an id neither finds
@@ -2432,10 +2459,32 @@ each entry in `src_components.md`; this list is the set that crosses components.
   dict, so a Spell's cleanup never empties the declaration a later scan replays. Eligibility is the object's OWN
   `__dict__` - an inherited, instance-level, metaclass or `__getattr__` answer does not count - and each object
   binds once per scan (by identity; the first name in module order), while distinct targets sharing a binding
-  key and rescans still raise. A scan is not atomic in any window: ending a bind window unregisters nothing, so
-  a failed scan keeps the targets it bound before the failure.
+  key and rescans still raise. A scan is not atomic against a bind that raises: a window body that raises
+  unregisters nothing, so a failed scan keeps the targets it bound before the failure. After conjure, a window
+  whose commit refuses a spell it bound is undone whole, the scan's targets with it (0.2.8316, #330).
   EVIDENCE: `src/melder/aether/spellbook/bind/scan.py:scan_bind`, `ScanBindMetadata.to_bind_kwargs`,
   `Scan._own_scan_bind_metadata`, `Scan.scan_module` and `src/melder/aether/spellbook/spellbook.py:Spellbook.scan`.
+- A refused late bind leaves nothing registered (0.2.8316, #330; the owner's decisions of 2026-11-22 and
+  2026-11-23). A bind after conjure registers its spell everywhere before its window commits Phases 1-4, so the
+  commit's refusal is undone in the change-control abort slot - `ChangeControlManager._dispatch_commit_validator`
+  records a bind request its structural validator refused, and `_default_abort_hook` has the Spellbook unwind it -
+  on the committing thread, before the claims are released, so no other admitted operation sees a half-undone Book.
+  The unwind takes, one at a time, the locks `cleanup_and_remove_spell` and `cleanup_spell` take, and holds no Book
+  lock across its steps (no new lock-order edge). It undoes only what the window registered, newest first: each
+  active late bind's lineage (whose impact closure flags what compiled against it), risk, crystals, Book and id maps,
+  Nexus record, frame index (`Aether._remove_single_spell_index`, which keeps the frame's link to the Book's
+  spell-id set), address claim, a store slot it filed for an existing object (`Creations.forget_slot`, no disposal),
+  a managed pool its stamp composed, its creation gate, and the Spell; each parked `bind_inactive` mate through the
+  root conduit's `cleanup_spell`. Then it re-gates the consumers that were refused because of the window's spells
+  (their frame and hidden type keys). Each step is best-effort: a failure is logged at ERROR and named in a note on
+  the refusal, and the next step runs. Forward-only records stay (the bind callbacks' effects, the research
+  journal, crystal tap rows, the DevOps fact stamps), and so do objects melds built during the window. An in-window
+  abort and every other failed commit unwind nothing. While the window is open the spell carries
+  `SpellState.late_bind_in_progress` and the Book's flag is pinned up: another thread's meld that reaches it is
+  refused (Sequence: Meld-Time Validation Gate, step 10).
+  EVIDENCE: `src/melder/aether/spellbook/spellbook.py:Spellbook._unwind_refused_bind_window`,
+  `Spellbook._end_bind_window`, `Spellbook._set_spellbook_validation_required` and
+  `src/melder/aether/aetheric_frame/dev_ops/change_control_manager/change_control_manager.py:ChangeControlManager._default_abort_hook`.
 - Descriptor binding names (2026-10-04, 0.2.8226): `SpellMap` and `SpellContract` keep `binding_name` exactly as
   written, as Bind keeps a spell's, and every match goes through the normalized address key bind registers and
   meld resolves by. Phase 3 compares a SpellMap default's binding name by `normalize_binding_name` on both sides
@@ -2669,9 +2718,9 @@ each entry in `src_components.md`; this list is the set that crosses components.
   slots, which is why a cleaned Spellbook cannot be re-conjured rather than
   merely refusing to be: the state that would answer the question is gone.
   EVIDENCE:
-  - src/melder/aether/spellbook/spellbook.py:272 (`_conjured` initialised)
-  - src/melder/aether/spellbook/spellbook.py:781 (ownership check reads it)
-  - src/melder/aether/spellbook/spellbook.py:839 (deleted on cleanup)
+  - src/melder/aether/spellbook/spellbook.py:278 (`_conjured` initialised)
+  - src/melder/aether/spellbook/spellbook.py:800 (ownership check reads it)
+  - src/melder/aether/spellbook/spellbook.py:858 (deleted on cleanup)
 - `SpellbookConfiguration` must be frozen before Conduit creation.
 - Disposal order is established at bind: both groups contribute and book order owns shared
   names. `enforce_priority_disposal_methods=False` puts the book block last; True puts it first.
@@ -2716,10 +2765,10 @@ each entry in `src_components.md`; this list is the set that crosses components.
     gone, because the `dynamic` argument reaching it is now the EFFECTIVE mode
     resolved from the posture, which makes a mismatch structurally impossible.
   EVIDENCE:
-  - src/melder/aether/spellbook/spellbook.py:7917-7960
+  - src/melder/aether/spellbook/spellbook.py:8528-8571
     (`Spellbook._settle_or_inherit_conjure_mode`; in-place settle :7947-7959,
     effective-mode return :7960; remeasured 2026-11-08 at 0.2.8285)
-  - src/melder/aether/spellbook/spellbook.py:8173
+  - src/melder/aether/spellbook/spellbook.py:8784
     (`conjure` resolves the effective mode as it enters the transaction window,
     passing `dynamic=self._settle_or_inherit_conjure_mode(dynamic)`)
   - src/melder/aether/aetheric_frame/aetheric_frame.py:726-787
@@ -3073,9 +3122,9 @@ each entry in `src_components.md`; this list is the set that crosses components.
   binding), and English is bound only under a spellframe: English at (spellframe='Greeter', binding_name='english') -
   use SpellMap(spellframe=Greeter, binding_name='english'). Ask for it where it is bound - the SpellMap shown, as the
   parameter's default, or a Greeter annotation while that spell is the only one bound under Greeter - or bind English
-  bare. [HIDDEN_PROVIDER]"; a late bind into a dynamic world raises the same report and the spell stays registered
-  and refused; every meld of it raises the same report, with or without an override; a consumer compiled before such
-  a class was bound under a frame is refused at its next meld. Through 0.2.8280 such a consumer conjured with an
+  bare. [HIDDEN_PROVIDER]"; a late bind into a dynamic world raises the same report and is undone (0.2.8316; until
+  then the spell stayed registered and refused); a consumer compiled before such a class was bound under a frame is
+  refused at its next meld, with or without an override. Through 0.2.8280 such a consumer conjured with an
   UNRESOLVED_INPUT socket - melded by override, or raising UnresolvedInputError "... nothing registered provides it
   ..." - and `SpellMap(Class)` failed conjure with PhaseExecutionError "... SpellMap default could not be resolved
   ..." (a bare RuntimeError at a late bind or meld). Remedy: ask for the class where it is bound - the SpellMap the
@@ -3726,8 +3775,28 @@ each entry in `src_components.md`; this list is the set that crosses components.
   `_normalize_spell_metadata`.
 - A scan that fails part-way keeps the targets it bound before the failure - before conjure and after it, in
   its own bind window or an outer one - and the error propagates. The `Spellbook.scan` docstring promised a
-  rollback with the window until 0.2.8228 (a documentation correction; the behaviour did not change).
+  rollback with the window until 0.2.8228 (a documentation correction; the behaviour did not change). A refusal at
+  the commit of a window after conjure is different since 0.2.8316: the whole window is undone, the scan's targets
+  with it.
   EVIDENCE: `src/melder/aether/spellbook/spellbook.py:Spellbook.scan`.
+- A late bind refused at its window's commit (0.2.8316, #330): the SpellbookValidationError keeps its type and text
+  and gains a note "The refused bind window was undone: '<Name>' (spell_id <id>), ... left every registry. Bind
+  again once the refusal's cause is fixed." (a parked `bind_inactive` mate is named "'<Name>' (spell_id <id>,
+  parked)"), and one note per unwind step that failed ("The unwind could not <step> for <spell>: <error>."), each
+  also logged at ERROR. Nothing the window bound stays registered, so a retry meets the same refusal instead of "Spell ID
+  collision detected", and binds once the cause is fixed; when no Spellbook resolves from the transaction, a note
+  says the window could not be undone. The commit also refuses a staged spell the binding thread already compiled
+  broken inside the window, which until 0.2.8316 committed broken.
+  EVIDENCE: `src/melder/aether/spellbook/spellbook.py:Spellbook._unwind_refused_bind_window`,
+  `Spellbook._run_unwind_step` and
+  `src/melder/aether/aetheric_frame/dev_ops/change_control_manager/change_control_manager.py:ChangeControlManager._default_structural_validator`.
+- A meld that lands inside another thread's late-bind window raises MeldExecutionError (0.2.8316, #330): for the
+  spell itself "'<Name>' (spell_id <id>) is being late-bound by another thread: its bind has not committed yet, so
+  nothing is built from it until the bind resolves. Meld again once that bind finishes; if the bind is refused, it is
+  undone and '<Name>' is not bound."; for a consumer whose plan reaches it "Cannot meld '<Consumer>' now: its plan
+  resolves '<Name>' (spell_id <id>), which is being late-bound by another thread ..." - the error's spell is the
+  consumer. The caller retries; there is no wait. The binding thread's own melds build.
+  EVIDENCE: `src/melder/aether/conduit/meld/meld.py:Meld._refuse_open_late_bind` and `Meld._refuse_planned_late_binds`.
 - A meld that races a link sever, an uncontract or an unbind of a spell its resolution pass is planning raises
   SpellbookValidationError, as a meld starting a moment later does, and the next meld resolves against the current
   links and contracts (0.2.8227).
@@ -4283,9 +4352,9 @@ Spellbook and binding:
 
 - path: `src/melder/aether/spellbook/spellbook.py`
   start_line: 1
-  end_line: 8742
-  loc: 8742
-  verified_at: 2026-11-08T12:50:22Z
+  end_line: 9354
+  loc: 9354
+  verified_at: 2026-11-23T10:55:43Z
   note: Spellbook core and conjure pipeline.
 - path: `src/melder/aether/spellbook/spellbook_creation_system.py`
   start_line: 1
@@ -5084,9 +5153,9 @@ Resolution and creations:
   note: one leased managed object and its pool.
 - path: `src/melder/aether/conduit/meld/meld.py`
   start_line: 1
-  end_line: 2501
-  loc: 2501
-  verified_at: 2026-11-08T15:30:59Z
+  end_line: 2623
+  loc: 2623
+  verified_at: 2026-11-23T10:55:43Z
   note: meld orchestration.
 - path: `src/melder/aether/conduit/meld/creation_context/creation_context.py`
   start_line: 1
@@ -5108,9 +5177,9 @@ Resolution and creations:
   note: SpellContract descriptor.
 - path: `src/melder/aether/conduit/creations/creations.py`
   start_line: 1
-  end_line: 1962
-  loc: 1962
-  verified_at: 2026-10-25T12:41:30Z
+  end_line: 2017
+  loc: 2017
+  verified_at: 2026-11-23T10:55:43Z
   note: instance registry.
 - path: `src/melder/aether/conduit/creations/conduit_creations.py`
   start_line: 1
@@ -5153,9 +5222,9 @@ Control plane:
   note: frame-local topology and transaction mirror.
 - path: `src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_system_states.py`
   start_line: 1
-  end_line: 2061
-  loc: 2061
-  verified_at: 2026-11-07T20:43:01Z
+  end_line: 2218
+  loc: 2218
+  verified_at: 2026-11-23T10:55:43Z
   note: lineage registry.
 - path: `src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_system_state.py`
   start_line: 1
@@ -5165,9 +5234,9 @@ Control plane:
   note: lineage state.
 - path: `src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_state.py`
   start_line: 1
-  end_line: 127
-  loc: 127
-  verified_at: 2026-11-02T12:02:57Z
+  end_line: 138
+  loc: 138
+  verified_at: 2026-11-23T10:55:43Z
   note: lineage flags.
 - path: `src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_state_change_reason.py`
   start_line: 1
@@ -5177,15 +5246,15 @@ Control plane:
   note: change reasons.
 - path: `src/melder/aether/aetheric_frame/dev_ops/change_control_manager/change_control_manager.py`
   start_line: 1
-  end_line: 1739
-  loc: 1739
-  verified_at: 2026-11-07T20:43:01Z
+  end_line: 1832
+  loc: 1832
+  verified_at: 2026-11-23T10:55:43Z
   note: change control.
 - path: `src/melder/aether/aetheric_frame/dev_ops/risk_manager/risk_manager.py`
   start_line: 1
-  end_line: 751
-  loc: 751
-  verified_at: 2026-11-01T13:44:23Z
+  end_line: 785
+  loc: 785
+  verified_at: 2026-11-23T10:55:43Z
   note: risk gating.
 
 Utilities:

@@ -15,21 +15,31 @@ from melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_validity imp
 
 
 def test_flag_values_match_names_and_legacy_ordinals() -> None:
-    """All old numeric inputs resolve to the same named flag."""
+    """
+    All old numeric inputs resolve to the same named flag.
+
+    The numeric era's members are declared first, in their legacy order. A member added after it -
+    `late_bind_in_progress` (#330, 2026-11-23) - is declared after them, resolves by its name and takes no number.
+    """
     names = (
         "new_index", "structure_changed", "dependencies_changed", "impacted_by_dependency",
         "contract_unvalidated", "contract_violation", "mutation_candidate", "mutation_quarantined",
         "mutation_failed", "has_open_incident", "anchored_component", "config_missing",
         "transfer_in_progress", "non_resolvable",
     )
+    added_after_the_numeric_era = ("late_bind_in_progress",)
     assert issubclass(SpellState, StrEnum)
-    assert tuple(member.name for member in SpellState) == names
+    assert tuple(member.name for member in SpellState) == names + added_after_the_numeric_era
     for ordinal, name in enumerate(names, 1):
         member = SpellState[name]
         assert member.value == name
         assert SpellState(name) is member
         assert SpellState(ordinal) is member
         assert SpellState(float(ordinal)) is member
+    for name in added_after_the_numeric_era:
+        assert SpellState(name) is SpellState[name]
+    with pytest.raises(ValueError):
+        SpellState(len(names) + 1)
 
 
 @pytest.mark.parametrize(

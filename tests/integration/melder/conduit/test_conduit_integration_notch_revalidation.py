@@ -600,11 +600,13 @@ def test_c4_a_class_annotation_of_a_framed_index_is_refused_until_a_notch_to_ano
     Contract (patch hidden_provider_2026_11_07, EPIC-2026-11-07-spellframe_hides_the_concrete_class): a class lookup
     reaches only a spell bound bare, and a class bound only under a frame is refused - HIDDEN_PROVIDER, naming the
     index's address. The chain bound before conjure (Dep, PClass, QClass) refuses the conjure on PClass. Bound after
-    conjure, PClass is refused at its bind and at its meld while Dep is active. The notch to Dep2 - another class -
-    announces the index's frame, which the refused PClass watches through its hidden candidate (re-gate path 6b), so it
-    melds as an unresolved input again, as a first meld would: UnresolvedInputError, and an override supplies Dep. The
-    notch back announces Dep's name (D1 = B), and PClass is refused again. The frame lookup `SpellMap(spellframe="Dep")`
-    follows the index d1 -> d2 -> d1 throughout. Until 2026-11-07 `dep: Dep` reached Dep by its type name and failed
+    conjure while Dep is active, PClass is refused at its bind and the refused bind is undone (#330, 0.2.8316; until
+    then it stayed registered and refused at its meld). Bound after the notch to Dep2 - another class - its class
+    lookup reaches nothing: it melds as an unresolved input, UnresolvedInputError, and an override supplies Dep. The
+    notch back announces Dep's name (D1 = B), and PClass is refused at its meld. The next notch to Dep2 announces the
+    index's frame, which the refused PClass watches through its hidden candidate (re-gate path 6b), so it melds as an
+    unresolved input again; the notch back refuses it again. The frame lookup `SpellMap(spellframe="Dep")` follows the
+    index d1 -> d2 -> d1 -> d2 -> d1 throughout. Until 2026-11-07 `dep: Dep` reached Dep by its type name and failed
     only after the notch to Dep2; from 2026-11-07 it was an unresolved input before, after and back.
     """
     report = (
@@ -628,6 +630,9 @@ def test_c4_a_class_annotation_of_a_framed_index_is_refused_until_a_notch_to_ano
         with pytest.raises(SpellbookValidationError) as at_bind:
             root.bind(spell=PClass, existence=Existence.many, permissions="create")
         assert str(at_bind.value) == report
+        # the refused late bind is undone (#330): nothing is melded as PClass
+        with pytest.raises(KeyError, match="No spell found"):
+            root.meld(spell=PClass)
 
         def assert_class_consumer_refused() -> None:
             """PClass's meld raises the HIDDEN_PROVIDER report while a Dep is active in the framed index."""
@@ -635,10 +640,12 @@ def test_c4_a_class_annotation_of_a_framed_index_is_refused_until_a_notch_to_ano
                 root.meld(spell=PClass)
             assert str(caught.value) == report
 
-        assert_class_consumer_refused()
         assert root.meld(spell=PFrame).dep.tag() == "d1"
 
         _notch_dep(book, root, index, by_class=True)
+        second_id = index.selected_spell_id
+        # bound while Dep2 is active, PClass's class lookup reaches nothing: it binds as an unresolved input
+        root.bind(spell=PClass, existence=Existence.many, permissions="create")
         with pytest.raises(UnresolvedInputError) as released:
             root.meld(spell=PClass)
         assert str(released.value).split("(parameter 'dep'): ", 1)[-1] == (
@@ -649,6 +656,15 @@ def test_c4_a_class_annotation_of_a_framed_index_is_refused_until_a_notch_to_ano
         assert root.meld(spell=PClass, override={"dep": Dep()}).dep.tag() == "d1"
         assert root.meld(spell=PFrame).dep.tag() == "d2"
 
+        root.notch_spell(spell_index=index, spell_id=first_id)
+        assert_class_consumer_refused()
+        assert root.meld(spell=PFrame).dep.tag() == "d1"
+
+        # re-gate path 6b: the notch to Dep2 releases the refused PClass again, and the notch back refuses it again
+        root.notch_spell(spell_index=index, spell_id=second_id)
+        with pytest.raises(UnresolvedInputError):
+            root.meld(spell=PClass)
+        assert root.meld(spell=PFrame).dep.tag() == "d2"
         root.notch_spell(spell_index=index, spell_id=first_id)
         assert_class_consumer_refused()
         assert root.meld(spell=PFrame).dep.tag() == "d1"

@@ -25,6 +25,12 @@ dependency was refused, once the refusal lifts.
 
 Every world is a fresh Aether (autouse fixture) with creation caching off; preconditions raise RuntimeError
 (`_given`), so a strict xfail never absorbs a world that was not set up as the test says.
+
+Since 0.2.8316 (#330, the owner's decisions of 2026-11-22 and 2026-11-23) a late bind refused at its commit is
+undone: the late-bound consumer leaves nothing registered and a retry is refused again. Until then it stayed
+registered and refused, and the re-gate tests used that refused late bind to get a registered refused consumer; they
+now get one through the order path of 6c - the consumer compiles while nothing of English is bound, then English
+arrives under the placement and the consumer's next meld is refused (`_refused_by_arrival`).
 """
 from collections.abc import Iterator
 from typing import Any, Callable, Dict, List, NamedTuple, Optional, Protocol, Tuple
@@ -32,6 +38,7 @@ from typing import Any, Callable, Dict, List, NamedTuple, Optional, Protocol, Tu
 import pytest
 
 from melder import Aether, Conduit, Spellbook, SpellMap
+from melder.aether.spellbook.bind.bind import Bind
 from melder.aether.spellbook.existence.existence import Existence
 from melder.aether.spellbook.spell_compiler.system.system_diagnostic import SystemDiagnosticSeverity
 from melder.utilities.custom_exceptions.spellbook_validation_error import SpellbookValidationError
@@ -372,6 +379,34 @@ def _cell_report(placement: str, consumer: str) -> str:
     return _report(name, _hidden_message(name, placement))
 
 
+def _refused_by_arrival(frame: str, placement: str = "protocol_named") -> Tuple[Conduit, List[str]]:
+    """
+    A dynamic world holding a registered SingleClass refused with HIDDEN_PROVIDER, reached through the order path.
+
+    SingleClass compiles as an unresolved input while nothing of English is bound; English then arrives under the
+    placement, after conjure, and SingleClass's next meld is refused with the placement's report (re-gate path 6c). A
+    late bind of SingleClass beside a framed English is refused and undone instead (#330), so it leaves no consumer.
+
+    Args:
+        frame: The frame name; each world uses its own.
+        placement: Where English arrives.
+
+    Returns:
+        Tuple[Conduit, List[str]]: The root and English's spell_ids in bind order.
+
+    Raises:
+        RuntimeError: Through `_given`, when the world is not the one described.
+    """
+    book = _book(frame)
+    book.bind(spell=SingleClass, existence="many", permissions="create")
+    root = book.conjure(name="root", dynamic=True)
+    _given(_unsupplied(root, SingleClass), _nothing_provides("SingleClass"), "SingleClass before English is bound")
+    english_ids = _bind_placement(root, placement)
+    _given(_refusal(lambda: root.meld(SingleClass)), _cell_report(placement, "class"),
+           "SingleClass's meld once English arrived")
+    return root, english_ids
+
+
 def _collection_warning(root: Conduit) -> Tuple[Any, str, Any]:
     """The one `collection_socket_no_providers` diagnostic `validate_resolution` holds: (severity, message, details)."""
     state = root.validate_resolution()
@@ -396,12 +431,14 @@ def test_class_lookup_of_a_class_bound_only_under_a_frame_or_a_name_refuses_conj
 
 
 @pytest.mark.parametrize(("placement", "consumer"), SINGLE_CELLS)
-def test_late_bound_class_consumer_is_refused_at_bind_and_at_every_meld_with_or_without_override(placement: str,
-                                                                                                 consumer: str) -> None:
+def test_late_bound_class_consumer_is_refused_at_bind_and_undone_so_its_retry_is_refused_again(placement: str,
+                                                                                               consumer: str) -> None:
     """
     A dynamic world conjured with the placement; the consumer bound after conjure. Its bind raises the report (the
-    late bind runs phases 1-4) and it stays registered; every meld then raises the same report, an override as well
-    (D2: an override no longer rescues a class bound only under a frame or a name).
+    late bind runs phases 1-4 at its commit) and, since #330, the refused bind is undone: nothing is registered under
+    the consumer's spell_id, and a retry raises the same report instead of a spell-id collision. Until 0.2.8316 the
+    consumer stayed registered and every meld of it raised the report; D2 - an override no longer rescues a class bound
+    only under a frame or a name - is pinned on a registered refused consumer by the order cases of 6c.
     """
     book = _book(f"late-{placement}-{consumer}")
     _bind_placement(book, placement)
@@ -409,8 +446,8 @@ def test_late_bound_class_consumer_is_refused_at_bind_and_at_every_meld_with_or_
     consumer_cls = CONSUMER_CLASSES[consumer]
     expected = _cell_report(placement, consumer)
     assert _refusal(lambda: root.bind(spell=consumer_cls, existence="many", permissions="create")) == expected
-    assert _refusal(lambda: root.meld(consumer_cls)) == expected
-    assert _refusal(lambda: root.meld(consumer_cls, override={"greeter": English()})) == expected
+    assert book.find_spell_by_spell_id(Bind.spell_id_inspector(consumer_cls)) is None, "the refused bind stayed"
+    assert _refusal(lambda: root.bind(spell=consumer_cls, existence="many", permissions="create")) == expected
 
 
 @pytest.mark.parametrize("placement", list(PLACEMENTS))
@@ -516,37 +553,29 @@ def test_class_bound_nowhere_keeps_the_unresolved_input_and_the_earlier_failures
 
 def test_refused_consumer_melds_a_version_of_its_class_bound_bare_after_the_refusal() -> None:
     """
-    Re-gate path 6a: SingleClass is refused at its late bind (English under Greeter); ENGLISH_V2 is then bound bare.
-    The bare bind announces "english", the refused consumer's own key, so its next meld reruns phases 1-4, finds the
-    bare version - no hidden candidate is recorded beside a class found bare - and builds with it.
+    Re-gate path 6a: SingleClass is refused once English arrives under Greeter (`_refused_by_arrival`); ENGLISH_V2 is
+    then bound bare. The bare bind announces "english", the refused consumer's own key, so its next meld reruns phases
+    1-4, finds the bare version - no hidden candidate is recorded beside a class found bare - and builds with it.
     """
-    book = _book("regate-6a")
-    _bind_placement(book, "protocol_named")
-    root = book.conjure(name="root", dynamic=True)
-    _given(_refusal(lambda: root.bind(spell=SingleClass, existence="many", permissions="create")),
-           _cell_report("protocol_named", "class"), "SingleClass's late bind")
+    root, _ = _refused_by_arrival("regate-6a")
     root.bind(spell=ENGLISH_V2, existence="many", permissions="create")
     assert type(root.meld(SingleClass).greeter) is ENGLISH_V2, "the version bound bare did not lift the refusal"
 
 
 def test_refused_consumer_is_released_by_a_notch_of_its_hidden_provider_to_another_class() -> None:
     """
-    Re-gate path 6b: SingleClass is refused at its late bind; English's index under Greeter is notched to ENGLISH_V2,
-    then to French. The refused consumer watches its hidden candidates' address, which a notch announces: a version of
-    the same name keeps it refused (English to a class lookup); another class releases it into an unresolved input -
-    nothing registered provides English, and an override supplies it.
+    Re-gate path 6b: SingleClass is refused once English arrives under Greeter (`_refused_by_arrival`); English's
+    index is notched to ENGLISH_V2, then to French. The refused consumer watches its hidden candidates' address, which
+    a notch announces: a version of the same name keeps it refused (English to a class lookup); another class releases
+    it into an unresolved input - nothing registered provides English, and an override supplies it.
     """
-    book = _book("regate-6b")
-    english_id, = _bind_placement(book, "protocol_named")
-    root = book.conjure(name="root", dynamic=True)
+    root, (english_id,) = _refused_by_arrival("regate-6b")
     index = root.get_spell_by_spell_id(english_id, "regate-6b").spell_index
     v2_id = root.bind_inactive(spell=ENGLISH_V2, spell_index=index, existence=Existence.many, permissions="create",
                                spellframe=Greeter, binding_name="english")
     french_id = root.bind_inactive(spell=French, spell_index=index, existence=Existence.many, permissions="create",
                                    spellframe=Greeter, binding_name="english")
     report = _cell_report("protocol_named", "class")
-    _given(_refusal(lambda: root.bind(spell=SingleClass, existence="many", permissions="create")), report,
-           "SingleClass's late bind")
     root.notch_spell(spell_index=index, spell_id=v2_id)
     assert _refusal(lambda: root.meld(SingleClass)) == report, "a same-named version released SingleClass"
     root.notch_spell(spell_index=index, spell_id=french_id)
@@ -679,21 +708,17 @@ DEPENDENT_GAP = (
 @pytest.mark.xfail(strict=True, raises=AssertionError, reason=DEPENDENT_GAP)
 def test_dependent_melded_during_a_refusal_melds_as_its_fresh_twin_once_the_refusal_lifts() -> None:
     """
-    Finding d, the intended outcome (LIVE = FRESH): SingleClass is refused at its late bind (English under Greeter);
-    Upper, which depends on it, is bound and melded during the refusal - its meld fails, SingleClass being broken.
-    English's index is then notched to French, which releases SingleClass into an unresolved input (re-gate path 6b).
-    A fresh twin of Upper bound then melds into SingleClass's UnresolvedInputError; Upper should give that answer. It
-    keeps "No validation error was recorded for this spell" instead - as a dependent does after an AMBIGUOUS_PROVIDER
-    refusal lifts, before this patch too (probes/dependent_after_refusal_probe.py).
+    Finding d, the intended outcome (LIVE = FRESH): SingleClass is refused once English arrives under Greeter
+    (`_refused_by_arrival`); Upper, which depends on it, is bound and melded during the refusal - its meld fails,
+    SingleClass being broken. English's index is then notched to French, which releases SingleClass into an unresolved
+    input (re-gate path 6b). A fresh twin of Upper bound then melds into SingleClass's UnresolvedInputError; Upper
+    should give that answer. It keeps "No validation error was recorded for this spell" instead - as a dependent does
+    after an AMBIGUOUS_PROVIDER refusal lifts, before this patch too (probes/dependent_after_refusal_probe.py).
     """
-    book = _book("dependent-after-refusal")
-    english_id, = _bind_placement(book, "protocol_named")
-    root = book.conjure(name="root", dynamic=True)
+    root, (english_id,) = _refused_by_arrival("dependent-after-refusal")
     index = root.get_spell_by_spell_id(english_id, "dependent-after-refusal").spell_index
     french_id = root.bind_inactive(spell=French, spell_index=index, existence=Existence.many, permissions="create",
                                    spellframe=Greeter, binding_name="english")
-    _given(_refusal(lambda: root.bind(spell=SingleClass, existence="many", permissions="create")),
-           _cell_report("protocol_named", "class"), "SingleClass's late bind")
     root.bind(spell=Upper, existence="many", permissions="create")
     during = _refusal(lambda: root.meld(Upper))
     _given("[broken_spell_in_dag]" in during, True, f"Upper melded during the refusal ({during!r})")
@@ -718,17 +743,13 @@ def test_refused_consumer_keeps_its_refusal_after_cleanup_spell_disposes_its_onl
     that is cleaned up is gone, and what its consumers meet afterwards is not a defect but the meld user's - an
     agent's - to handle. Not tied to #210.
 
-    SingleClass is refused at its late bind (English under Greeter); English is then disposed with `cleanup_spell`,
-    which announces nothing. SingleClass keeps its HIDDEN_PROVIDER refusal - the report it was refused with, still
-    naming the disposed English - at every meld, with an override as well, while a fresh twin bound after the cleanup
-    binds and melds as an unresolved input (the agent's way out: dispose the consumer and bind it again).
+    SingleClass is refused once English arrives under Greeter (`_refused_by_arrival`); English is then disposed with
+    `cleanup_spell`, which announces nothing. SingleClass keeps its HIDDEN_PROVIDER refusal - the report it was refused
+    with, still naming the disposed English - at every meld, with an override as well, while a fresh twin bound after
+    the cleanup binds and melds as an unresolved input (the agent's way out: dispose the consumer and bind it again).
     """
-    book = _book("cleanup-own-book")
-    english_id, = _bind_placement(book, "protocol_named")
-    root = book.conjure(name="root", dynamic=True)
+    root, (english_id,) = _refused_by_arrival("cleanup-own-book")
     report = _cell_report("protocol_named", "class")
-    _given(_refusal(lambda: root.bind(spell=SingleClass, existence="many", permissions="create")), report,
-           "SingleClass's late bind")
     root.cleanup_spell(spell=root.get_spell_by_spell_id(english_id, "cleanup-own-book"))
     assert _refusal(lambda: root.meld(SingleClass)) == report, "SingleClass lost its refusal at the cleanup"
     assert _refusal(lambda: root.meld(SingleClass, override={"greeter": English()})) == report

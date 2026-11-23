@@ -13,7 +13,7 @@ Regenerate with:
     python src/melder/_build_assets/_build_asset_runner.py
 """
 
-BUILT_FOR_VERSION = "0.2.8315"
+BUILT_FOR_VERSION = "0.2.8316"
 NODE_COUNT = 1243
 EDGE_COUNT = 1452
 WHY_COUNT = 988
@@ -69,7 +69,7 @@ NODES = {
     'melder.aether.aetheric_frame.conduit_cloud': ('src/melder/aether/aetheric_frame/conduit_cloud.py', 'conduit_cloud', 'module', 1, False),
     'melder.aether.aetheric_frame.conduit_cloud.ConduitCloud': ('src/melder/aether/aetheric_frame/conduit_cloud.py', 'ConduitCloud', 'class', 23, False),
     'melder.aether.aetheric_frame.dev_ops.change_control_manager.change_control_manager': ('src/melder/aether/aetheric_frame/dev_ops/change_control_manager/change_control_manager.py', 'change_control_manager', 'module', 1, False),
-    'melder.aether.aetheric_frame.dev_ops.change_control_manager.change_control_manager.ChangeControlManager': ('src/melder/aether/aetheric_frame/dev_ops/change_control_manager/change_control_manager.py', 'ChangeControlManager', 'class', 62, False),
+    'melder.aether.aetheric_frame.dev_ops.change_control_manager.change_control_manager.ChangeControlManager': ('src/melder/aether/aetheric_frame/dev_ops/change_control_manager/change_control_manager.py', 'ChangeControlManager', 'class', 64, False),
     'melder.aether.aetheric_frame.dev_ops.change_control_manager.conflict_manager.conflict_manager': ('src/melder/aether/aetheric_frame/dev_ops/change_control_manager/conflict_manager/conflict_manager.py', 'conflict_manager', 'module', 1, False),
     'melder.aether.aetheric_frame.dev_ops.change_control_manager.conflict_manager.conflict_manager.ChangeControlConflictManager': ('src/melder/aether/aetheric_frame/dev_ops/change_control_manager/conflict_manager/conflict_manager.py', 'ChangeControlConflictManager', 'class', 13, False),
     'melder.aether.aetheric_frame.dev_ops.change_control_manager.embargo_manager.embargo_manager': ('src/melder/aether/aetheric_frame/dev_ops/change_control_manager/embargo_manager/embargo_manager.py', 'embargo_manager', 'module', 1, False),
@@ -726,7 +726,7 @@ NODES = {
     'melder.aether.spellbook.spellbinder': ('src/melder/aether/spellbook/spellbinder.py', 'spellbinder', 'module', 1, False),
     'melder.aether.spellbook.spellbinder.SpellBinder': ('src/melder/aether/spellbook/spellbinder.py', 'SpellBinder', 'class', 16, False),
     'melder.aether.spellbook.spellbook': ('src/melder/aether/spellbook/spellbook.py', 'spellbook', 'module', 1, False),
-    'melder.aether.spellbook.spellbook.Spellbook': ('src/melder/aether/spellbook/spellbook.py', 'Spellbook', 'class', 74, False),
+    'melder.aether.spellbook.spellbook.Spellbook': ('src/melder/aether/spellbook/spellbook.py', 'Spellbook', 'class', 76, False),
     'melder.aether.spellbook.spellbook_creation_system': ('src/melder/aether/spellbook/spellbook_creation_system.py', 'spellbook_creation_system', 'module', 1, False),
     'melder.aether.spellbook.spellbook_creation_system.SpellbookCreationSystem': ('src/melder/aether/spellbook/spellbook_creation_system.py', 'SpellbookCreationSystem', 'class', 54, False),
     'melder.aether.spellbook.spellframe_kind.spellframe_kind': ('src/melder/aether/spellbook/spellframe_kind/spellframe_kind.py', 'spellframe_kind', 'module', 1, False),

@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from contextlib import AbstractContextManager, nullcontext
 import inspect
-from threading import RLock
+from threading import RLock, get_ident
 from typing import (
     TYPE_CHECKING,
     Optional,
@@ -996,6 +996,13 @@ class Meld(Cleanable, ABC):
         downstream walk mark a consumer `gated` when the provider it resolves
         changes, and that state brings the consumer here.
 
+        A spell another thread is late-binding is refused here before anything
+        else, and so is a meld whose compile would reach one (#330,
+        2026-11-23): the catch-up walk refuses a marked dependency it visits,
+        and once the structural branch has run, a compile that follows walks
+        the spell's planned dependencies first (`_refuse_planned_late_binds`).
+        The late bind's own thread passes, so its window can meld what it binds.
+
         Threading:
             The catch-up runs first and holds no lock while it walks; it takes
             one stale dependency's rebuild window, then that dependency's lock,
@@ -1015,9 +1022,12 @@ class Meld(Cleanable, ABC):
                 dependency comes out of its refresh broken or still not valid
                 (the error then lists that dependency).
             MeldExecutionError: If change-control reports the root as dirty for
-                the active resolution conduit.
+                the active resolution conduit, or the spell - or a dependency its
+                compile would resolve - is being late-bound by another thread.
         """
-        if self._may_compile(spell):
+        self._refuse_open_late_bind(spell)
+        may_compile = self._may_compile(spell)
+        if may_compile:
             self._refresh_stale_dependencies(spell)
 
         # Structural gating
@@ -1041,6 +1051,11 @@ class Meld(Cleanable, ABC):
                     self._force_resolution_revalidation(
                         spell, change_reason=SpellStateChangeReason.structure_changed,
                     )
+
+        # A compile follows: its plan expands the topology the structural branch may just have rewritten, so a
+        # dependency another thread is late-binding is refused before Phases 5-11 build over it (#330).
+        if may_compile:
+            self._refuse_planned_late_binds(spell)
 
         # Resolution gating (per-conduit)
         if not spell.resolution_required:
@@ -1096,8 +1111,11 @@ class Meld(Cleanable, ABC):
             SpellbookValidationError: If a full target pass leaves the spell
                 unresolved for the conduit, or a stale dependency comes out of
                 its refresh broken or not valid (the error lists it).
+            MeldExecutionError: If the spell, or a dependency its catch-up walk
+                visits, is being late-bound by another thread (#330).
             Exception: Re-raises deferred resolution failures.
         """
+        self._refuse_open_late_bind(spell)
         if spell.resolution_required:
             # The catch-up (D2) runs before this spell's window and lock; it takes
             # each stale dependency's own window and lock, one at a time.
@@ -1490,6 +1508,9 @@ class Meld(Cleanable, ABC):
         Raises:
             SpellbookValidationError: When a dependency comes out of its refresh
                 broken or still not valid (the error lists that dependency).
+            MeldExecutionError: When a dependency the walk visits is being
+                late-bound by another thread (#330): refused before it is
+                refreshed, so nothing compiles it before its bind resolves.
             RuntimeError: When a dependency must be expanded or refreshed but its
                 Book is unavailable.
         """
@@ -1503,9 +1524,110 @@ class Meld(Cleanable, ABC):
                 if dependency.spell_id in visited:
                     continue
                 visited.add(dependency.spell_id)
+                self._refuse_open_late_bind(dependency, consumer=spell)
                 if self._is_stale(dependency):
                     self._refresh_dependency_structure(dependency)
                 pending.append(dependency)
+
+    def _refuse_planned_late_binds(self, spell: Spell) -> None:
+        """
+        Refuse a compile whose plan would expand a dependency another thread is late-binding (#330, 2026-11-23).
+
+        Purpose:
+            The catch-up walk runs before the structural branch, over the topology the spell's last Phase 3
+            recorded. When that branch reruns Phase 3, the new topology can resolve a spell a late bind on another
+            thread has published but not committed - a class it waited for, a new member of a `list[...]` it
+            gathers - and Phases 5-11 would then build over it. This walks the plan the compile is about to expand,
+            and refuses before it does.
+
+        Contract:
+            - Returns at once when no late bind is open in the frame (`late_bind_thread_ids` empty), so a compile
+              in a frame with no open late bind pays one empty-map read.
+            - Otherwise walks the planned dependencies as `_refresh_stale_dependencies` walks them
+              (`_iter_planned_dependencies`, depth first, each spell once; the spell itself is never revisited) and
+              raises at the first one `_refuse_open_late_bind` refuses. Refreshes and mutates nothing.
+
+        Args:
+            spell: The spell about to compile.
+
+        Raises:
+            MeldExecutionError: When a planned dependency is being late-bound by another thread.
+            RuntimeError: When the spell has a recorded topology but no Book to resolve it through.
+
+        Threading:
+            Holds no lock while walking; a topology read takes the registry lock for the read only.
+        """
+        spell_system_states = spell._spell_system_states
+        if not spell_system_states.late_bind_thread_ids:
+            return
+        spellbook = spell._spellbook
+        visited = {spell.spell_id}
+        pending = [spell]
+        while pending:
+            current = pending.pop()
+            for dependency in self._iter_planned_dependencies(current, spellbook, spell_system_states):
+                if dependency.spell_id in visited:
+                    continue
+                visited.add(dependency.spell_id)
+                self._refuse_open_late_bind(dependency, consumer=spell)
+                pending.append(dependency)
+
+    @staticmethod
+    def _refuse_open_late_bind(spell: Spell, consumer: Optional[Spell] = None) -> None:
+        """
+        Refuse a meld that reaches a spell another thread is late-binding (#330, 2026-11-23).
+
+        Purpose:
+            A late bind - a bind after conjure - publishes its spell before its window commits the spell's Phases
+            1-4. While that window is open, a meld on another thread that compiled the spell, or built from it,
+            would run on a definition the commit may still refuse and undo. The owner's rule: such a meld is
+            refused at once and its caller retries; the binding thread's own melds pass, so the window can use what
+            it binds.
+
+        Contract:
+            - Reads `SpellSystemStates.late_bind_thread_ids` once. An empty map, no entry for `spell.spell_id`, or
+              the calling thread's own id returns; any other thread's id raises.
+            - The map is keyed by spell id, which a cleaned Spell keeps, so the check never reads the Spell's index
+              (an unwind may have cleaned it).
+            - `consumer` names the spell being melded when `spell` is a dependency its compile reaches; the error
+              then names both, the consumer as the meld's root.
+
+        Args:
+            spell: The spell melded, or a dependency the meld's compile reaches.
+            consumer: The melded spell when `spell` is its dependency; None when `spell` is the melded spell.
+
+        Raises:
+            MeldExecutionError: When another thread holds `spell` in an open late-bind window.
+
+        Threading:
+            Lock-free: one reference read of the published map and one dict read.
+        """
+        late_bind_thread_ids = spell._spell_system_states.late_bind_thread_ids
+        if not late_bind_thread_ids:
+            return
+        binding_thread_id = late_bind_thread_ids.get(spell.spell_id)
+        if binding_thread_id is None or binding_thread_id == get_ident():
+            return
+        if consumer is None:
+            raise MeldExecutionError(
+                spell_id=spell.spell_id,
+                spell_name=spell.spell_name,
+                message=(
+                    f"'{spell.spell_name}' (spell_id {spell.spell_id}) is being late-bound by another thread: its "
+                    f"bind has not committed yet, so nothing is built from it until the bind resolves. Meld again "
+                    f"once that bind finishes; if the bind is refused, it is undone and '{spell.spell_name}' is not "
+                    f"bound."
+                ),
+            )
+        raise MeldExecutionError(
+            spell_id=consumer.spell_id,
+            spell_name=consumer.spell_name,
+            message=(
+                f"Cannot meld '{consumer.spell_name}' now: its plan resolves '{spell.spell_name}' (spell_id "
+                f"{spell.spell_id}), which is being late-bound by another thread: that bind has not committed yet, "
+                f"so nothing is built from it until the bind resolves. Meld again once that bind finishes."
+            ),
+        )
 
     def _iter_planned_dependencies(
             self,

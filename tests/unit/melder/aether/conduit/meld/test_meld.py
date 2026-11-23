@@ -172,6 +172,9 @@ class _SpellSystemStatesStub:
         self._states_by_spell_id: Dict[str, Any] = states_by_spell_id if states_by_spell_id is not None else {}
         self.topology_reads: list[str] = []
         self.topology_read_hooks: list[Callable[[str], None]] = []
+        # The registry's published late-bind marks, spell id -> binding thread id (#330), which the meld gate reads:
+        # empty - no late bind open in the frame.
+        self.late_bind_thread_ids: Dict[str, int] = {}
 
     def get_conduit_resolution_state(self, conduit_id: str) -> _ResolutionStateStub:
         """

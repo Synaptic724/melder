@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_state.py",
- "source_sha256": "21b65d0a1dca9af5a0654babbca7eaeaf6254fa3cad18e2f111518c2df2149da",
+ "source_sha256": "29c106cf6faf9e3cfea03b65133e9c3db164ace0769ae493346d28cdc68250e7",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_state": {
@@ -30,11 +30,12 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "4e11a4e43001528c6f79848029e34d5c4fefab506beaa6bf0ffe9b214567008b",
+   "span_sha256": "b5d0601ef32be5b280c03e51769831214197b24d7ead358093ae0cb1029e4929",
    "role": "Fine-grained state-flag enum for one spell lineage.",
    "responsibilities": [
     "labels topology, contract, mutation, ops and capability state flags for a lineage",
-    "non_resolvable marks a lineage whose selected version was bound resolvable=False: it owes no resolution verdict, validation never clears it, and RiskManager leaves its risk out of the Book flag (0.2.8247)"
+    "non_resolvable marks a lineage whose selected version was bound resolvable=False: it owes no resolution verdict, validation never clears it, and RiskManager leaves its risk out of the Book flag (0.2.8247)",
+    "late_bind_in_progress marks a lineage an open late bind registered; it changes no validity and is declared after the numeric era's members, with no legacy number (#330, 0.2.8316)"
    ],
    "owns_state": [
     "new_index",
@@ -50,13 +51,14 @@
     "anchored_component",
     "config_missing",
     "transfer_in_progress",
-    "non_resolvable"
+    "non_resolvable",
+    "late_bind_in_progress"
    ],
    "phases": [
     "validation",
     "runtime"
    ],
-   "semantics_authored_against": "6d892780b13060cbb75e56182c345e4ec5665a150157ec2edd4420cdcc733e0b"
+   "semantics_authored_against": "b5d0601ef32be5b280c03e51769831214197b24d7ead358093ae0cb1029e4929"
   }
  },
  "edges_out": [],

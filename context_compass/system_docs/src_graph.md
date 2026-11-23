@@ -317,7 +317,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_agent_documentation/manifest/agent_documentation_manifest.py
 
-- source_sha256: `42f3c559a30fc70b59adfd80013aa9ffda868757e6b7a8fd5080d3ece66ef3da`
+- source_sha256: `a38db5209f33ade9f7614984b33cd7e1e16ee837e2793a2a80fe06f648770f51`
 - nodes: 1
 
 ### Nodes
@@ -396,7 +396,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_bind_guard/manifest/bind_guard_manifest.py
 
-- source_sha256: `68e8eca6723f1b70d3ffc5526aac59bd21155c59cd55ac7c57b81d0c69fa6975`
+- source_sha256: `60cbec8a6b872f54cf2b5bbbe84ca7264f4d5834b155cd66e3f7ee0b8a8c7050`
 - nodes: 1
 
 ### Nodes
@@ -474,7 +474,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/manifest/graph_adjacency_manifest.py
 
-- source_sha256: `11e54ce18599b9bda2a3bf39fe3dd04e8f14d944897e3b2371c28ce7951401ff`
+- source_sha256: `8c0d2527d67267e9b8030ce5d05ab2c33468f6631da437c74a22db88e775415f`
 - nodes: 1
 
 ### Nodes
@@ -491,7 +491,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/manifest/system_documents_index.py
 
-- source_sha256: `546f7b0ec38e52ee718b4f0fd5c49736a8749cfad3652cea5eabdedce5da8f01`
+- source_sha256: `a36b69c2d6ecde537a74858697b9e30df4ed18e554ea2a1c99981940c6fdae27`
 - nodes: 1
 
 ### Nodes
@@ -508,7 +508,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/manifest/system_documents_manifest.py
 
-- source_sha256: `83bf84fce248fb42361bf479c393596e13e9ee431c0007349e9b54a76c2c4b5d`
+- source_sha256: `4a56a57f06f5c3decfd87380762d465d68ebea90f66c6da082c75f5bd2a37a20`
 - nodes: 1
 
 ### Nodes
@@ -528,7 +528,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/payloads/src_architecture_payload.py
 
-- source_sha256: `575ca8ee5a0b03f35432997aaf40d10acdc802fd37961a617d8d4638c10fc6a7`
+- source_sha256: `1a61a7ff173085f326b3604e15de8d97153d44ccb4a7df2eb5875059f89c9855`
 - nodes: 1
 
 ### Nodes
@@ -545,7 +545,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/payloads/src_components_payload.py
 
-- source_sha256: `d08ef7070e921fb48af8598cf878021e40f6bc652c6389ec94d23fa88ff6ca65`
+- source_sha256: `145e45acbb8107891f38049be1e8b76baded1a9df0162775c3fec1da409481a9`
 - nodes: 1
 
 ### Nodes
@@ -562,7 +562,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/payloads/src_graph_payload.py
 
-- source_sha256: `2bd8d63b58de8a409675b6d409807ba651fb040d10071755711960d18158a580`
+- source_sha256: `c2a283dc31c2a37c2f5c4d6df6ea573ad4eb8a97f17bd3c859099974644828a0`
 - nodes: 1
 
 ### Nodes
@@ -1047,7 +1047,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/aetheric_frame/dev_ops/change_control_manager/change_control_manager.py
 
-- source_sha256: `5a85dbf90b035232040a9b80e26a4ed467ba912b798db0b73c6b19d667c2ee5b`
+- source_sha256: `374656a680920d21a9af408e629b236ee2ab5c3aa34f1689bbf8e069127da8f6`
 - nodes: 2
 
 ### Nodes
@@ -1061,7 +1061,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 #### `ChangeControlManager` (class)
 
 - id: `melder.aether.aetheric_frame.dev_ops.change_control_manager.change_control_manager.ChangeControlManager`
-- defined at: `src/melder/aether/aetheric_frame/dev_ops/change_control_manager/change_control_manager.py:62`
+- defined at: `src/melder/aether/aetheric_frame/dev_ops/change_control_manager/change_control_manager.py:64`
 - extends: `Cleanable`
 - role: Frame-level change-control registry and admission surface.
 - responsibilities:
@@ -1070,7 +1070,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - coordinates revalidation hooks for dirty roots
   - validates bind/notch structural commits for member, exact-name and legacy string forms while retaining the enum-notch compiled-member shortcut
   - announces, from its default dirty marker, the type key of each staged spell bound under a spellframe or a binding name beside the frame keys of a bind, notch or link commit, in the same single mark_collection_dependents_dirty call, so a consumer waiting under the class name is re-gated (_hidden_type_keys_for_staged, 0.2.8281, the owner's D1 = B)
-- owns_state: `_pending_changes`, `_component_of_by_conduit`, `_dirty_roots_by_conduit`, `_transaction_manager`, `_conflict_manager`, `_embargo_manager`, `_orchestrator`
+  - records a bind request its structural validator refused and, from its default abort hook - which the orchestrator runs on the committing thread before releasing the claims - has that request's Spellbook unwind the window; refuses a staged bind spell already compiled broken (#330, 0.2.8316)
+- owns_state: `_pending_changes`, `_component_of_by_conduit`, `_dirty_roots_by_conduit`, `_transaction_manager`, `_conflict_manager`, `_embargo_manager`, `_orchestrator`, `_refused_bind_requests`
 - phases: `init`, `runtime`, `cleanup`
 - public methods: `abort_request`, `admit_request`, `cleanup`, `clear_pending_change`, `commit_request`, `conflict_manager`, `describe`, `devops_information_registry`, `disable_change_control`, `embargo_manager`, `enable_change_control`, `get_pending_change` (+22 more)
 
@@ -1093,7 +1094,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - `melder.aether.aetheric_frame.dev_ops.change_control_manager.change_control_manager.ChangeControlManager` -> `melder.aether.aetheric_frame.dev_ops.spell_system_states.spell_system_states.SpellSystemStates`: ChangeControlManager operates over SpellSystemStates but does not own its lifecycle.
 - `melder.aether.aetheric_frame.dev_ops.change_control_manager.change_control_manager.ChangeControlManager` -> `melder.aether.spellbook.spell_compiler.phases.compiler_phase_3.CompilerPhase3`: _hidden_type_keys_for_staged reads CompilerPhase3._hidden_type_key for each staged spell it resolves.
 
-### Edge candidates (8, unconfirmed)
+### Edge candidates (9, unconfirmed)
 
 Instantiation guesses from the AST. Over-generated roughly 8x against the reference graph; confirm or drop before relying on them.
 
@@ -1104,6 +1105,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - `melder.aether.aetheric_frame.dev_ops.change_control_manager.change_control_manager.ChangeControlManager` creates `ChangeControlOrchestrator`
 - `melder.aether.aetheric_frame.dev_ops.change_control_manager.change_control_manager.ChangeControlManager` creates `TransactionMediator`
 - `melder.aether.aetheric_frame.dev_ops.change_control_manager.change_control_manager.ChangeControlManager` creates `ValueError`
+- `melder.aether.aetheric_frame.dev_ops.change_control_manager.change_control_manager.ChangeControlManager` creates `SpellbookValidationError`
 - `melder.aether.aetheric_frame.dev_ops.change_control_manager.change_control_manager.ChangeControlManager` creates `ChangeControlAdmissionResult`
 
 <!-- END FILE: src/melder/aether/aetheric_frame/dev_ops/change_control_manager/change_control_manager.py -->
@@ -2986,7 +2988,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/aetheric_frame/dev_ops/risk_manager/risk_manager.py
 
-- source_sha256: `734df5a19f3c5b4f7bd96f8dcad32e3a5d902e5466b37dd2a298df08a4a8438c`
+- source_sha256: `402ff96199b59a23568dc6b129d95b3ea8253b9d2eea58653b5935edd38d9b69`
 - nodes: 3
 
 ### Nodes
@@ -3020,9 +3022,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - reacts to validity changes from spell-system state
   - pushes validation-required flags back onto spellbooks
   - leaves a lineage flagged SpellState.non_resolvable out of the Book flag with one subset test against SpellSystemStates.non_resolvable_index_ids, while its risk stays tracked, and register_conduit seeds every visible spell before refreshing the flag once (0.2.8247)
+  - recomputes a conduit's Book flag on request, without a risk event (refresh_spellbook_flag), as the end of a late-bind window asks (#330, 0.2.8316)
 - owns_state: `_conduit_states`, `_lineage_conduits`, `_spell_system_states`
 - phases: `init`, `runtime`, `cleanup`
-- public methods: `cleanup`, `devops_information_registry`, `on_resolution_validity_change`, `on_structural_validity_change`, `register_conduit`, `register_spell`, `unregister_conduit`, `unregister_spell`
+- public methods: `cleanup`, `devops_information_registry`, `on_resolution_validity_change`, `on_structural_validity_change`, `refresh_spellbook_flag`, `register_conduit`, `register_spell`, `unregister_conduit`, `unregister_spell`
 
 ### Edges out
 
@@ -3096,7 +3099,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_state.py
 
-- source_sha256: `21b65d0a1dca9af5a0654babbca7eaeaf6254fa3cad18e2f111518c2df2149da`
+- source_sha256: `29c106cf6faf9e3cfea03b65133e9c3db164ace0769ae493346d28cdc68250e7`
 - nodes: 2
 
 ### Nodes
@@ -3116,7 +3119,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - responsibilities:
   - labels topology, contract, mutation, ops and capability state flags for a lineage
   - non_resolvable marks a lineage whose selected version was bound resolvable=False: it owes no resolution verdict, validation never clears it, and RiskManager leaves its risk out of the Book flag (0.2.8247)
-- owns_state: `new_index`, `structure_changed`, `dependencies_changed`, `impacted_by_dependency`, `contract_unvalidated`, `contract_violation`, `mutation_candidate`, `mutation_quarantined`, `mutation_failed`, `has_open_incident`, `anchored_component`, `config_missing`, `transfer_in_progress`, `non_resolvable`
+  - late_bind_in_progress marks a lineage an open late bind registered; it changes no validity and is declared after the numeric era's members, with no legacy number (#330, 0.2.8316)
+- owns_state: `new_index`, `structure_changed`, `dependencies_changed`, `impacted_by_dependency`, `contract_unvalidated`, `contract_violation`, `mutation_candidate`, `mutation_quarantined`, `mutation_failed`, `has_open_incident`, `anchored_component`, `config_missing`, `transfer_in_progress`, `non_resolvable`, `late_bind_in_progress`
 - phases: `validation`, `runtime`
 
 <!-- END FILE: src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_state.py -->
@@ -3204,7 +3208,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_system_states.py
 
-- source_sha256: `ceb93228b567a76dcb6966a2a2be2296038bb47035e61d11adee1a7a69497094`
+- source_sha256: `4813647114763e25e08d6645aa8d2ad515de8a0fd84a6c18bf25b9112041091b`
 - nodes: 2
 
 ### Nodes
@@ -3233,9 +3237,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - records the selected version's capability as SpellState.non_resolvable in register_index before the gate publishes - re-publishing the validity when the write changed the flag on a lineage already gated - and publishes the flagged lineages as one frozenset (non_resolvable_index_ids) that RiskManager reads without a lock (0.2.8247)
   - records the binding key of each lineage's selected version in register_index (binding_key=..., kept when None, dropped by unregister_index and cleanup) and marks everything downstream of given lineages for revalidation - a lineage reached by a registry edge, frame-wide, as gated, impacted_by_dependency and transitively dirty; a SpellContract consumer, in any Book, of a reached lineage's binding key as gated + contract_unvalidated - visiting each lineage once and never a seed (mark_dependents_for_revalidation); mark_contract_dependents_dirty walks on the same way from the consumers it marks (0.2.8250)
   - also watches an UNRESOLVED_INPUT socket under its hidden_frame_keys, so a change announced at a hidden candidate's address (a notch of that index, for instance) re-gates the consumer Phase 4 refused (0.2.8281)
-- owns_state: `_states_by_index_id`, `_states_by_spell_id`, `_dirty_indexes`, `_local_topologies`, `_resolution_by_conduit_id`, `_index_owner_spellbook_id`, `_collection_frames_by_index`, `_collection_dependents_by_spellbook`, `_contract_keys_by_index`, `_contract_dependents_by_spellbook`, `_non_resolvable_index_ids`, `_binding_key_by_index`
+  - marks a late bind (register_index(late_bind_thread_id=...)): flags the state late_bind_in_progress and publishes spell id -> binding thread id in late_bind_thread_ids, a dict replaced whole under its lock and read without it; clear_late_bind_marks and unregister_index take the mark away (#330, 0.2.8316)
+- owns_state: `_states_by_index_id`, `_states_by_spell_id`, `_dirty_indexes`, `_local_topologies`, `_resolution_by_conduit_id`, `_index_owner_spellbook_id`, `_collection_frames_by_index`, `_collection_dependents_by_spellbook`, `_contract_keys_by_index`, `_contract_dependents_by_spellbook`, `_non_resolvable_index_ids`, `_binding_key_by_index`, `_late_bind_thread_by_spell_id`
 - phases: `init`, `validation`, `runtime`, `cleanup`
-- public methods: `bulk_set_conduit_root_validity`, `bulk_set_conduit_spell_validity`, `cleanup`, `clear_conduit_diagnostics`, `clear_conduit_dirty`, `compute_impact_closure`, `consume_dirty_indexes`, `devops_information_registry`, `drop_conduit_resolution_state`, `forget_spell_resolution_verdicts`, `get_by_index_id`, `get_by_spell_id` (+21 more)
+- public methods: `bulk_set_conduit_root_validity`, `bulk_set_conduit_spell_validity`, `cleanup`, `clear_conduit_diagnostics`, `clear_conduit_dirty`, `clear_late_bind_marks`, `compute_impact_closure`, `consume_dirty_indexes`, `devops_information_registry`, `drop_conduit_resolution_state`, `forget_spell_resolution_verdicts`, `get_by_index_id` (+23 more)
 
 ### Edges out
 
@@ -5200,7 +5205,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/conduit/creations/creations.py
 
-- source_sha256: `a0a83dd811f367975ad4a5d5b68cc24842212f19c76709cb7b936687bb49134f`
+- source_sha256: `d137c7966e63abe68a8b805acbcf16f0069866a38df437da999913aea3dc7114`
 - nodes: 3
 
 ### Nodes
@@ -5249,9 +5254,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - keeps one ManagedSpellQuantity per managed version a root store owns in _managed_quantities, a map of its own, so lookups, live probes and purge never meet a pool: ensure_managed_quantity composes it at an owner stamp (idempotent) and, when a definition bound again under the same spell_id meets the pool its earlier definition left, hands it the new Spell after releasing the store lock (ManagedSpellQuantity._rebind_spell takes the new settings, 0.2.8254), get_managed_quantity is a lock-free read, discard_managed_quantity gives up an identity-checked pool without cleaning it (0.2.8243-0.2.8246)
   - cleans its pools first at cleanup, newest first, before the disposable registry - a pool is composed at conjure, before the uniques its objects hold - their failures joining the store's group; extract/restore carry a pool as a managed row, a restore cleaning the pool it replaced after the lock; purge returns 0 for a managed spell (0.2.8243)
   - registers every pool it takes and unregisters every pool it gives up with ReleaseManagedSpell, outside the store lock, so the registry holds exactly the pools live stores hold (0.2.8244)
+  - gives one slot back without disposing its object (forget_slot): the live entry, its disposal record, its shelf entry and its shape leave under the store lock, and the slot guard stays (#330, 0.2.8316)
 - owns_state: `_creations`, `_disposable_creations`, `_slot_guards`, `_owner_conduit_id`, `_id`, `_lock`, `_managed_quantities`, `_slot_shapes`, `_shelves`
 - phases: `init`, `runtime`, `cleanup`
-- public methods: `add_creation`, `add_many_creations`, `cleanup`, `clear_all`, `count_spell_creations`, `discard_managed_quantity`, `ensure_managed_quantity`, `extract_spell_creations`, `get_creation`, `get_managed_quantity`, `id`, `owner_conduit_id` (+7 more)
+- public methods: `add_creation`, `add_many_creations`, `cleanup`, `clear_all`, `count_spell_creations`, `discard_managed_quantity`, `ensure_managed_quantity`, `extract_spell_creations`, `forget_slot`, `get_creation`, `get_managed_quantity`, `id` (+8 more)
 
 ### Edges out
 
@@ -5804,7 +5810,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/conduit/meld/meld.py
 
-- source_sha256: `8f03184aeeb1210851274eac663df7c48f0fbcbe7fc411cbcfc37112b85f8958`
+- source_sha256: `1366e40cf630bc04c97dc3af82ea93480223ce29ad30f3c6649ddcef1314f179`
 - nodes: 2
 
 ### Nodes
@@ -5846,6 +5852,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - routes a spell flagged resolution_required through the deferred lane: phases 8-11 for an existing creation or its current Phase 5 root, otherwise the full target pass 5-11 followed by a resolution-validity check for the conduit (_requires_own_target_pass, _raise_unless_resolution_valid)
   - answers the live-creation probe of a managed spell for both doors from its owner store's pool (_describe_managed_pool_status: live while the count is above 0, creation_count the count, storage scope managed_pool; 0 without a store or a pool) (0.2.8243)
   - before a spell compiles at a meld (_may_compile), and first in the deferred lane, refreshes each stale dependency its plan expands - socket targets and contracted providers, at their lineage's current version - with that dependency's owner Book under its rebuild window and lock, then resets its plan so its own next meld runs a full target pass; a broken or still-gated dependency raises SpellbookValidationError naming it (_refresh_stale_dependencies, _refresh_dependency_structure, 0.2.8250)
+  - refuses a meld on another thread that reaches a spell an open late bind marked (_refuse_open_late_bind, one lock-free read of SpellSystemStates.late_bind_thread_ids): at both gate entries, per catch-up dependency, and per planned dependency when a compile follows the structural branch (_refuse_planned_late_binds); the binding thread passes, and the caller retries (#330, 0.2.8316)
 - owns_state: `_input_resolution_cache`, `_change_control_manager_by_frame`, `_spell_compiler_system`, `_fast_meld_doors`, `_meld_hooks`, `_baseline_meld_hooks`, `_meld_hooks_modified`
 - phases: `runtime`, `cleanup`
 - public methods: `cleanup`, `describe_live_creation_status`, `has_live_creation`, `hooks_modified`, `meld`, `meld_existing_spell`, `purge`, `register_meld_hooks`, `set_meld_hooks`
@@ -15944,7 +15951,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spellbook.py
 
-- source_sha256: `4865c723f6da4d002486a1d392177075cabce50dff6e86950116842674c8242c`
+- source_sha256: `469b6f5a3bfba1b44abf0412375f69e8a723e665d72c9ce427e843021765133a`
 - nodes: 2
 
 ### Nodes
@@ -15958,7 +15965,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 #### `Spellbook` (class)
 
 - id: `melder.aether.spellbook.spellbook.Spellbook`
-- defined at: `src/melder/aether/spellbook/spellbook.py:74`
+- defined at: `src/melder/aether/spellbook/spellbook.py:76`
 - extends: `Cleanable`
 - role: Public binding, validation, and conjure surface.
 - responsibilities:
@@ -15999,7 +16006,10 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - runs a notch's after_switch hook after the structural check inside the guarded section, so an error from it takes the refused-notch reversal (design 2, 0.2.8275)
   - announces a contract grant's type key: once the Book has conjured, _add_contracted_spell marks the copy's frame key and, for a copy bound under a spellframe or a binding name (CompilerPhase3._hidden_type_key; never a Protocol's own definition), its type key in one _mark_collection_dependents_dirty call after the Book lock, so a consumer waiting under the class name is re-gated (0.2.8281)
   - checks a notch's incoming version before anything moves: under the Book lock, after its no-op return and before the address claim moves, _apply_notch refuses a version that is not the one _inactive_spells holds under its spell_id, whose index (read through Spell._spell_index_unless_cleaned) is not the index notched, or that a cleanup_spell is disposing (its spell_id in _disposing_spell_ids: still parked while _dispose_spell releases its contracts with no Book lock held) (_refuse_unparked_incoming: RuntimeError naming the version still active, or that the index has none, and the remedy where one exists), so a cleanup_spell of the target racing the notch - it takes no transaction - leaves the index's active version, claim and routes in place, and a version parked in another index is no longer promoted under this one (0.2.8285)
-- owns_state: `_bind`, `_spells`, `_spells_by_id`, `_lookup_spells`, `_contracted_spells`, `_configuration`, `_conduit`
+  - marks a bind after conjure before publishing it: pins its validation flag up (_pending_late_bind_spell_ids, read by _set_spellbook_validation_required), registers the lineage with the binding thread's id, then publishes the Book maps (#330, 0.2.8316)
+  - undoes a bind window whose commit the structural validator refused (_unwind_refused_bind_window, called by ChangeControlManager's default abort hook with the window's claims held): each late bind and parked mate leaves every registry, a filed existing-object slot is forgotten undisposed, a composed managed pool is discarded, the consumers refused because of the window are re-gated, and the refusal gains a note; every step is best-effort and logged (#330, 0.2.8316)
+  - ends every bind window in end_transaction's finally (_end_bind_window): clears the late-bind marks still registered, the window's bookkeeping and the flag pin, and has the RiskManager recompute the flag (#330, 0.2.8316)
+- owns_state: `_bind`, `_spells`, `_spells_by_id`, `_lookup_spells`, `_contracted_spells`, `_configuration`, `_conduit`, `_pending_late_bind_spell_ids`, `_pending_inactive_spells`, `_pending_composed_pool_ids`, `_pending_registered_slot_keys`
 - phases: `init`, `validation`, `runtime`, `cleanup`
 - public methods: `add_bind_hooks`, `begin_transaction`, `bind`, `bind_inactive`, `cleanup`, `cleanup_and_remove_spell`, `cleanup_spell`, `clear_bind_hooks`, `conduit`, `configure_aether_frame`, `conjure`, `contracted_spells` (+17 more)
 

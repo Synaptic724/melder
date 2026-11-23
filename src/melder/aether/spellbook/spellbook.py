@@ -62,11 +62,13 @@ if TYPE_CHECKING:
         SpellSystemStates,
     )
     from melder.aether.conduit.conduit import Conduit
+    from melder.aether.conduit.creations.creations import Creations
     from melder.aether.spellbook.existence.managed_spell_mode import ManagedSpellMode
     from melder.aether.spellbook.spell_compiler.topology.spell_local_topology import SpellLocalTopology
     from melder.crystallizer.crystallizer import Crystallizer
     from melder.mutation_research.mutation_research import MutationResearch
     from melder.utilities.logger.safe_logger import SafeLogger
+    from melder.utilities.synchronization.creation_gate_controller import CreationGateController
     from melder.utilities.synchronization.unit_of_work import UnitOfWork
 
 #region Spellbook
@@ -208,6 +210,10 @@ class Spellbook(Cleanable):
         "_lookup_spells",
         "_pending_binding_frame_keys",
         "_pending_structural_spells",
+        "_pending_late_bind_spell_ids",
+        "_pending_inactive_spells",
+        "_pending_composed_pool_ids",
+        "_pending_registered_slot_keys",
         "_phase_scheduler",
         "_phase_run_lock",
         "_spell_id_pool",
@@ -275,6 +281,19 @@ class Spellbook(Cleanable):
         self._caching_system: CachingSystem | None = None
         self._pending_binding_frame_keys: set[str] = set()
         self._pending_structural_spells: list[Spell] = []
+        # Late-bind window bookkeeping (#330, 2026-11-23): what a bind window opened after conjure registered, kept
+        # so a window whose commit is refused is undone exactly (`_unwind_refused_bind_window`) and cleared with the
+        # two collections above when the window ends (`_end_bind_window`). While `_pending_late_bind_spell_ids` is
+        # not empty it also pins `_spellbook_validation_required` up (`_set_spellbook_validation_required`).
+        # - `_pending_late_bind_spell_ids`: the active late binds, marked in SpellSystemStates, in bind order.
+        # - `_pending_inactive_spells`: each `bind_inactive` version staged after conjure, with the id of the
+        #   throwaway index its owner stamp registered a creation gate under (folded away right after the stamp).
+        # - `_pending_composed_pool_ids`: spell ids whose managed pool a stamp in this window composed.
+        # - `_pending_registered_slot_keys`: store keys this window filed for existing objects.
+        self._pending_late_bind_spell_ids: list[str] = []
+        self._pending_inactive_spells: list[tuple[Spell, Optional[str]]] = []
+        self._pending_composed_pool_ids: set[str] = set()
+        self._pending_registered_slot_keys: set[str] = set()
         # Spellbook-owned persistent phase scheduler (lazy): one worker pool
         # reused across every conjure phase group and lazy revalidation run.
         # Created on first phase run; cleaned (sentinels + joins) exactly
@@ -841,6 +860,10 @@ class Spellbook(Cleanable):
         del self._transaction_identity
         del self._pending_binding_frame_keys
         del self._pending_structural_spells
+        del self._pending_late_bind_spell_ids
+        del self._pending_inactive_spells
+        del self._pending_composed_pool_ids
+        del self._pending_registered_slot_keys
         del self._spell_system_states
         del self._configuration_locked
         del self._binds_before_configuration_count
@@ -5647,21 +5670,25 @@ class Spellbook(Cleanable):
                     "[SPELLBOOK] Active change transaction does not match the requested type."
                 )
             if expected_type == "bind" and bind_session is not None:
-                mediator.end_transaction_for_identity(
-                    identity=self._transaction_identity,
-                    transaction_type=ChangeTransactionType.BIND,
-                )
-                # Spellbook owns its own local bind state (see begin_transaction).
-                # Nested bind windows (scan / bind_inactive joins) share the outer
-                # session, so clearing after EVERY end wiped the staged structural
-                # set down to the most recent bind and starved the commit-time
-                # validator. Clear only when the mediator reports the bind
-                # envelope fully finalized (the outermost end).
-                if mediator.get_session_for_identity(
-                    identity=self._transaction_identity,
-                    transaction_type=ChangeTransactionType.BIND,
-                ) is None:
-                    self._clear_bind_transaction_state()
+                try:
+                    mediator.end_transaction_for_identity(
+                        identity=self._transaction_identity,
+                        transaction_type=ChangeTransactionType.BIND,
+                    )
+                finally:
+                    # Spellbook owns its own local bind state (see begin_transaction).
+                    # Nested bind windows (scan / bind_inactive joins) share the outer
+                    # session, so clearing after EVERY end wiped the staged structural
+                    # set down to the most recent bind and starved the commit-time
+                    # validator. Clear only when the mediator reports the bind
+                    # envelope fully finalized (the outermost end) - committed, or
+                    # refused and raising (#330: the window end then still clears its
+                    # late-bind marks and pin).
+                    if mediator.get_session_for_identity(
+                        identity=self._transaction_identity,
+                        transaction_type=ChangeTransactionType.BIND,
+                    ) is None:
+                        self._end_bind_window()
                 return
         request = mediator.get_active_request()
         if request is None:
@@ -5707,6 +5734,11 @@ class Spellbook(Cleanable):
             - Begins a change-control transaction on entry.
             - Ends the transaction on exit, even if an exception is raised.
             - Bind transactions open/close the binding transaction window.
+            - After conjure, a bind window's exit commits it: Phases 1-4 run on
+              the spells it bound, and a refusal undoes the whole window before
+              SpellbookValidationError propagates from the exit, with a note
+              naming the spells removed (#330, 2026-11-23). A body that raises
+              aborts the window and unwinds nothing: its spells stay bound.
         Args:
             transaction_type:
                 A member, its exact name, or its historical lowercase value.
@@ -5738,6 +5770,9 @@ class Spellbook(Cleanable):
             RuntimeError: If change-control admission is denied.
             ValueError: If transaction_type is invalid.
             TypeError: If transaction_type has an invalid type.
+            SpellbookValidationError: From the exit of a bind window after
+                conjure whose commit refuses a spell it bound; the window is
+                undone first.
 
         Returns:
             Generator[Spellbook, None, None]: A context manager yielding this spellbook
@@ -5770,7 +5805,8 @@ class Spellbook(Cleanable):
         Purpose:
             Reset the Spellbook-local pending collections that accumulate bind
             side effects while the mediator/change-control layer owns the actual
-            transaction start and end lifecycle.
+            transaction start and end lifecycle, the late-bind bookkeeping
+            (#330) included.
         """
         with self._lock:
             if self._pending_binding_frame_keys is None:
@@ -5781,6 +5817,10 @@ class Spellbook(Cleanable):
                 self._pending_structural_spells = []
             else:
                 self._pending_structural_spells.clear()
+            self._pending_late_bind_spell_ids.clear()
+            self._pending_inactive_spells.clear()
+            self._pending_composed_pool_ids.clear()
+            self._pending_registered_slot_keys.clear()
 
     def _build_bind_transaction_metadata(
             self,
@@ -5824,13 +5864,504 @@ class Spellbook(Cleanable):
 
         Purpose:
             Drop the Spellbook-local pending collections once the mediator and
-            change-control layers have finished the bind transaction lifecycle.
+            change-control layers have finished the bind transaction lifecycle,
+            the late-bind bookkeeping (#330) included: clearing
+            `_pending_late_bind_spell_ids` drops the window's pin on the Book's
+            validation flag (`_set_spellbook_validation_required`). The marks in
+            SpellSystemStates are `_end_bind_window`'s to clear, before this runs.
         """
         with self._lock:
             if self._pending_binding_frame_keys is not None:
                 self._pending_binding_frame_keys.clear()
             if self._pending_structural_spells is not None:
                 self._pending_structural_spells.clear()
+            self._pending_late_bind_spell_ids.clear()
+            self._pending_inactive_spells.clear()
+            self._pending_composed_pool_ids.clear()
+            self._pending_registered_slot_keys.clear()
+
+    def _end_bind_window(self) -> None:
+        """
+        Internal
+
+        End the outermost bind window: clear the late-bind marks it left, its pending collections and its pin, and
+        refresh the Book's validation flag.
+
+        Purpose:
+            The one exit of a bind window (#330, 2026-11-23). `end_transaction` runs it in a `finally` once the
+            mediator holds no bind session for this Book any more - after a commit, after a refused commit (whose
+            unwind already ran in the orchestrator's abort slot) and after an in-window abort - so a late-bind mark
+            never outlives its window.
+
+        Contract:
+            - Clears `SpellState.late_bind_in_progress` from every lineage the window marked that is still registered
+              (`SpellSystemStates.clear_late_bind_marks`): a committed late bind's spells meld like any other from
+              here on, and so do an aborted window's, which stay bound (today's contract). An unwound lineage left
+              with its mark already.
+            - Then clears the pending collections (`_clear_bind_transaction_state`), which drops the window's pin on
+              the flag (`_set_spellbook_validation_required`).
+            - Then, when the Book is conjured, asks the RiskManager to recompute the flag for the Book's conduit
+              (`RiskManager.refresh_spellbook_flag`), so a flag the pin alone held up drops.
+            - Best-effort, documented: it runs in a `finally`, possibly while a refusal propagates, so a failure of
+              the mark clearing or the refresh is logged at ERROR and does not replace the error in flight. The
+              pending collections are cleared regardless.
+            - Safe after the unwind: what it clears is already gone.
+
+        Returns:
+            None.
+
+        Threading:
+            Runs on the window's thread after the window's claims are released. Takes the Book lock only for the
+            snapshot (and inside `_clear_bind_transaction_state`), then the registry's lock inside
+            `clear_late_bind_marks` and the RiskManager's inside its refresh - one at a time, never nested here.
+        """
+        with self._lock:
+            marked = list(self._pending_late_bind_spell_ids)
+        if marked:
+            try:
+                self._spell_system_states.clear_late_bind_marks(marked)
+            except Exception as error:
+                self._logger.error(
+                    f"Could not clear the late-bind marks of {marked} at the end of their bind window: {error}",
+                    "_end_bind_window",
+                    exc_info=True,
+                )
+        self._clear_bind_transaction_state()
+        if not (self._conjured and self._conduit is not None):
+            return
+        risk_manager = self._get_risk_manager()
+        if risk_manager is None:
+            return
+        try:
+            risk_manager.refresh_spellbook_flag(self._conduit._id)
+        except Exception as error:
+            self._logger.error(
+                f"Could not refresh the validation flag at the end of a bind window: {error}",
+                "_end_bind_window",
+                exc_info=True,
+            )
+
+    def _unwind_refused_bind_window(self, refusal: BaseException) -> None:
+        """
+        Internal
+
+        Undo a bind window whose commit was refused, while the window's claims are still held.
+
+        Purpose:
+            A late bind - a bind after conjure - registers its spell in the Book maps, the frame registries,
+            SpellSystemStates, the RiskManager and the Nexus record before its commit runs Phases 1-4, so a commit
+            that refuses the window used to leave all of it behind: the caller was told the bind failed, and binding
+            it again collided on its spell id (#330). This undoes exactly what the window registered, inside the
+            mediator's scope (the owner's decision of 2026-11-22), and flags what came to rely on it.
+
+        Contract:
+            - Called only by `ChangeControlManager`'s default abort hook, on the committing thread, from the
+              orchestrator's commit-failure path before it releases the claims, and only for a bind request whose
+              structural validator refused. An in-window abort never reaches it.
+            - Undoes from the window's bookkeeping, newest first:
+              - each active late bind (`_unwind_late_bound_spell`): its lineage (whose impact closure gates the spells
+                compiled against it, and whose mark goes with it), its risk, its crystals when recording, its Book
+                and spell_id maps and Nexus record, its frame index and address claim, a store slot the window filed
+                for its existing object, a managed pool its stamp composed, its creation gate, and the Spell and its
+                index;
+              - each parked `bind_inactive` mate, through the root conduit's `cleanup_spell` (contracts first, then
+                the parked disposal), then a pool its stamp composed and the gate its throwaway index registered.
+            - Then re-gates the consumers that a meld refused because of the window's spells
+              (`mark_collection_dependents_dirty` with their frame keys and hidden type keys, collected while they
+              were live).
+            - Leaves what is forward-only or not the window's: the bind callbacks' effects, the research journal,
+              crystal tap rows, the DevOps fact stamps, and objects melds built during the window.
+            - Adds a note to `refusal` naming the spells removed, and one note per step that failed; the
+              orchestrator re-raises `refusal` with its type and text unchanged.
+            - Leaves the bookkeeping, the marks of anything not unwound and the pin to `_end_bind_window`, which
+              runs when the window's end returns or raises.
+            - Never raises: every step is best-effort cleanup (`_run_unwind_step`), so one failed step is logged at
+              ERROR, named in a note, and the next step runs.
+
+        Args:
+            refusal: The exception the commit's structural validator raised.
+
+        Returns:
+            None.
+
+        Threading:
+            The window's scope claims (the Book, its conduit and ward) are held, so no other admitted operation
+            touches the Book; another thread's meld of a window spell is refused by its mark until the lineage is
+            unregistered, and finds no spell after. Takes the Book lock only for the snapshot and the map pops, and
+            each other component's lock inside the call made to it - the locks `cleanup_and_remove_spell` and
+            `cleanup_spell` take - one at a time; the Book lock is never held across a call into another component.
+        """
+        with self._lock:
+            late_bind_ids = set(self._pending_late_bind_spell_ids)
+            active = [spell for spell in self._pending_structural_spells if spell.spell_id in late_bind_ids]
+            parked = list(self._pending_inactive_spells)
+            composed_pool_ids = set(self._pending_composed_pool_ids)
+            filed_slot_keys = set(self._pending_registered_slot_keys)
+        if not active and not parked:
+            return
+        conduit = self._get_required_conduit_surface()
+        failures: list[str] = []
+        announce_keys = self._collect_unwind_announce_keys(active, failures)
+        removed = [f"'{spell.spell_name}' (spell_id {spell.spell_id})" for spell in active]
+        removed.extend(f"'{spell.spell_name}' (spell_id {spell.spell_id}, parked)" for spell, _ in parked)
+        for spell in reversed(active):
+            self._unwind_late_bound_spell(spell, conduit, composed_pool_ids, filed_slot_keys, failures)
+        for parked_spell, gate_index_id in reversed(parked):
+            self._unwind_parked_window_mate(parked_spell, gate_index_id, conduit, composed_pool_ids, failures)
+        if announce_keys:
+            self._run_unwind_step(
+                failures,
+                "the window",
+                "re-gate the consumers refused because of its spells",
+                lambda: self._spell_system_states.mark_collection_dependents_dirty(
+                    spellbook_id=self._id,
+                    frame_keys=announce_keys,
+                ),
+            )
+        refusal.add_note(
+            "The refused bind window was undone: " + ", ".join(removed) + " left every registry. Bind again once the "
+            "refusal's cause is fixed."
+        )
+        for failure in failures:
+            refusal.add_note(failure)
+
+    def _collect_unwind_announce_keys(self, spells: Sequence[Spell], failures: list[str]) -> set[str]:
+        """
+        Internal
+
+        Collect the keys a refused window's spells are announced under, while they are still live.
+
+        Purpose:
+            A meld on another thread can refuse a consumer because of a window spell - HIDDEN_PROVIDER for a class
+            now bound under a spellframe, AMBIGUOUS_PROVIDER for a second implementation - and pin it `invalid`.
+            Such a consumer holds no edge to the spell, so `unregister_index`'s closure misses it; it watches the
+            spell's frame key or, for a hidden provider, its type key. The commit's dirty marker announces exactly
+            these keys after a successful commit; the unwind announces them too (#330).
+
+        Contract:
+            - For each spell: its frame key (`spell.key[0]`, the key the staging announces) and, when it has one,
+              its hidden type key (`CompilerPhase3._hidden_type_key`, as `ChangeControlManager` reads it).
+            - A spell whose keys cannot be read is logged at ERROR and named in `failures`; the others still count.
+
+        Args:
+            spells: The window's active late binds.
+            failures: The unwind's failure notes, appended to.
+
+        Returns:
+            set[str]: The keys to announce.
+        """
+        keys: set[str] = set()
+        for spell in spells:
+            try:
+                keys.add(spell.key[0])
+                type_key = CompilerPhase3._hidden_type_key(spell)
+                if type_key is not None:
+                    keys.add(type_key)
+            except Exception as error:
+                self._logger.error(
+                    f"Unwind of a refused bind window: could not read the announce keys of '{spell.spell_name}' "
+                    f"(spell_id {spell.spell_id}): {error}",
+                    "_unwind_refused_bind_window",
+                    exc_info=True,
+                )
+                failures.append(
+                    f"The unwind could not read the keys of '{spell.spell_name}' (spell_id {spell.spell_id}) to "
+                    f"re-gate its waiting consumers: {type(error).__name__}: {error}."
+                )
+        return keys
+
+    def _unwind_late_bound_spell(
+            self,
+            spell: Spell,
+            conduit: Conduit,
+            composed_pool_ids: set[str],
+            filed_slot_keys: set[str],
+            failures: list[str],
+    ) -> None:
+        """
+        Internal
+
+        Undo one active late bind of a refused window: every surface its bind registered, newest step first.
+
+        Contract:
+            - The steps, each through `_run_unwind_step`: unregister its lineage (`unregister_index`: its impact
+              closure gates what compiled against it, and its late-bind mark goes with it); unregister its risk;
+              remove its crystals when the Crystallizer records; take it off the Book maps; drop its spell_id maps
+              and Nexus record (`_unregister_owned_spell_id`); remove its index from the frame
+              (`Aether._remove_single_spell_index`, which keeps the frame's link to this Book's spell-id set, unlike
+              the conduit-wide removal); release its address claim; take back a store slot the window filed for its
+              existing object, without disposing the object (`Creations.forget_slot`); discard and clean a managed
+              pool its stamp composed; clean the Spell and its index; and unregister and clean the creation gate its
+              stamp registered.
+            - The same inverses as `cleanup_and_remove_spell`, plus the four that method lacks (the slot, the pool,
+              the gate, the frame-link-safe index removal).
+
+        Args:
+            spell: The late-bound Spell.
+            conduit: The Book's root conduit, whose store and gate controller the stamp used.
+            composed_pool_ids: Spell ids whose managed pool this window composed.
+            filed_slot_keys: Store keys this window filed for existing objects.
+            failures: The unwind's failure notes, appended to.
+
+        Returns:
+            None.
+        """
+        spell_id = spell.spell_id
+        spell_index = spell.spell_index
+        index_id = spell_index.id
+        store_key = spell.store_key
+        conduit_id = conduit._id
+        creations = conduit._creations
+        gate_controller = conduit._creation_gate_controller
+        subject = f"'{spell.spell_name}' (spell_id {spell_id})"
+        self._run_unwind_step(
+            failures, subject, "unregister its lineage",
+            lambda: self._spell_system_states.unregister_index(spell_index),
+        )
+        self._run_unwind_step(
+            failures, subject, "unregister its risk",
+            lambda: self._unregister_spell_with_risk_manager(conduit_id, spell),
+        )
+        if self._crystallizer.activated:
+            self._run_unwind_step(
+                failures, subject, "remove its crystals",
+                lambda: self._remove_unwound_crystals(spell_id, index_id),
+            )
+        self._run_unwind_step(
+            failures, subject, "take it off the Book maps",
+            lambda: self._pop_unwound_book_maps(spell, spell_index),
+        )
+        self._run_unwind_step(
+            failures, subject, "drop its spell_id maps and Nexus record",
+            lambda: self._unregister_owned_spell_id(spell_id, spell),
+        )
+        self._run_unwind_step(
+            failures, subject, "remove its index from the frame",
+            lambda: Spellbook._aether._remove_single_spell_index(conduit_id, spell_index, self._aetheric_frame_name),
+        )
+        self._run_unwind_step(
+            failures, subject, "release its address claim",
+            lambda: self._aetheric_frame.release_lookup_by_spell_id(spell_id),
+        )
+        if store_key in filed_slot_keys:
+            self._run_unwind_step(
+                failures, subject, "take back its existing object's store slot",
+                lambda: creations.forget_slot(store_key),
+            )
+        if spell_id in composed_pool_ids:
+            self._run_unwind_step(
+                failures, subject, "discard its managed pool",
+                lambda: self._discard_unwound_pool(creations, spell_id),
+            )
+        self._run_unwind_step(
+            failures, subject, "clean the spell and its index",
+            lambda: self._clean_unwound_spell(spell, spell_index),
+        )
+        self._run_unwind_step(
+            failures, subject, "release its creation gate",
+            lambda: self._release_unwound_gate(gate_controller, index_id),
+        )
+
+    def _unwind_parked_window_mate(
+            self,
+            spell: Spell,
+            gate_index_id: Optional[str],
+            conduit: Conduit,
+            composed_pool_ids: set[str],
+            failures: list[str],
+    ) -> None:
+        """
+        Internal
+
+        Undo one `bind_inactive` version a refused window staged after conjure.
+
+        Contract:
+            - Disposes it through the root conduit's `cleanup_spell`, the path a caller's disposal of a parked version
+              takes: the version leaves every contract an index link gave it to first, then the parked disposal
+              takes it out of the Book and its target index and cleans it. `cleanup_spell` takes no transaction, so it
+              runs inside the window's held claims.
+            - Then discards and cleans a managed pool its stamp composed, and unregisters and cleans the creation
+              gate its stamp registered under its throwaway index (`gate_index_id`; None in an automatic world).
+            - Each step through `_run_unwind_step`.
+
+        Args:
+            spell: The parked Spell.
+            gate_index_id: The throwaway index id its stamp registered a gate under, or None.
+            conduit: The Book's root conduit.
+            composed_pool_ids: Spell ids whose managed pool this window composed.
+            failures: The unwind's failure notes, appended to.
+
+        Returns:
+            None.
+        """
+        spell_id = spell.spell_id
+        subject = f"'{spell.spell_name}' (spell_id {spell_id}, parked)"
+        self._run_unwind_step(
+            failures, subject, "dispose the parked version",
+            lambda: conduit.cleanup_spell(spell=spell),
+        )
+        if spell_id in composed_pool_ids:
+            self._run_unwind_step(
+                failures, subject, "discard its managed pool",
+                lambda: self._discard_unwound_pool(conduit._creations, spell_id),
+            )
+        if gate_index_id is not None:
+            self._run_unwind_step(
+                failures, subject, "release its creation gate",
+                lambda: self._release_unwound_gate(conduit._creation_gate_controller, gate_index_id),
+            )
+
+    def _run_unwind_step(
+            self,
+            failures: list[str],
+            subject: str,
+            step: str,
+            action: Callable[[], object],
+    ) -> None:
+        """
+        Internal
+
+        Run one step of the unwind of a refused bind window, best-effort.
+
+        Contract:
+            - Calls `action`. Documented best-effort cleanup behaviour: an exception is caught, logged at ERROR with
+              the subject, the step and the traceback, and recorded in `failures` as a note for the refusal, so one
+              step that cannot be undone never stops the steps after it or replaces the refusal in flight.
+
+        Args:
+            failures: The unwind's failure notes, appended to.
+            subject: What the step undoes, as the note names it.
+            step: The step, as a verb phrase ("unregister its lineage").
+            action: The step itself.
+
+        Returns:
+            None.
+        """
+        try:
+            action()
+        except Exception as error:
+            self._logger.error(
+                f"Unwind of a refused bind window: could not {step} for {subject}: {error}",
+                "_unwind_refused_bind_window",
+                exc_info=True,
+            )
+            failures.append(f"The unwind could not {step} for {subject}: {type(error).__name__}: {error}.")
+
+    def _remove_unwound_crystals(self, spell_id: str, index_id: str) -> None:
+        """
+        Internal
+
+        Take an unwound late bind's custody and index twin out of the Crystallizer's record.
+
+        Contract:
+            - The removal `cleanup_and_remove_spell` emits for a true removal: the spell's custody, then its index's
+              membership twin. Called only while the Crystallizer records.
+
+        Args:
+            spell_id: The unwound spell's id.
+            index_id: Its index's id.
+
+        Returns:
+            None.
+        """
+        self._crystallizer.emit_spell_removed(spell_id, frame_name=self._aetheric_frame_name)
+        self._crystallizer.emit_spell_index_removed(index_id)
+
+    def _pop_unwound_book_maps(self, spell: Spell, spell_index: SpellIndex) -> None:
+        """
+        Internal
+
+        Take an unwound late bind off the Book's active maps.
+
+        Contract:
+            - Pops `_spells[spell_index]`, and `_lookup_spells[spell._key]` only while it routes to this index - the
+              pops `cleanup_and_remove_spell` makes, under the Book lock, as every writer of those maps does.
+
+        Args:
+            spell: The unwound Spell.
+            spell_index: Its index.
+
+        Returns:
+            None.
+        """
+        with self._lock:
+            self._spells.pop(spell_index, None)
+            if self._lookup_spells.get(spell._key) is spell_index:
+                self._lookup_spells.pop(spell._key, None)
+
+    @staticmethod
+    def _discard_unwound_pool(creations: Creations, spell_id: str) -> None:
+        """
+        Internal
+
+        Give up and clean the managed pool an unwound bind's stamp composed.
+
+        Contract:
+            - Discards the pool the store holds under `spell_id` (`Creations.discard_managed_quantity`, an identity
+              check under the store lock, then the unregister from `ReleaseManagedSpell`) and cleans it - as an
+              ownership transfer's rollback does with a pool its stamp composed. A store that no longer holds the
+              pool leaves nothing to do.
+
+        Args:
+            creations: The root store the stamp composed the pool in.
+            spell_id: The managed spell's id.
+
+        Returns:
+            None.
+        """
+        pool = creations.get_managed_quantity(spell_id)
+        if pool is not None and creations.discard_managed_quantity(spell_id, pool):
+            pool.cleanup()
+
+    @staticmethod
+    def _clean_unwound_spell(spell: Spell, spell_index: SpellIndex) -> None:
+        """
+        Internal
+
+        Clean an unwound late bind's Spell, then its index.
+
+        Contract:
+            - Marks the Spell as cleaned by its Book (`_spellbook_cleanup`), so its cleanup does not route back to
+              `cleanup_and_remove_spell`, then cleans it and its index - the last steps of
+              `cleanup_and_remove_spell`.
+
+        Args:
+            spell: The unwound Spell, already off every map.
+            spell_index: Its index.
+
+        Returns:
+            None.
+        """
+        spell._spellbook_cleanup = True
+        spell.cleanup()
+        spell_index.cleanup()
+
+    @staticmethod
+    def _release_unwound_gate(gate_controller: CreationGateController, index_id: str) -> None:
+        """
+        Internal
+
+        Unregister and clean the creation gate an unwound bind's owner stamp registered.
+
+        Contract:
+            - The frame's controller owns a spell-index gate until it is unregistered; this takes it out
+              (`unregister_spell_index_gate`) and cleans it, since no one else owns it after. Nothing to do when no
+              gate is registered under the id (an automatic world registers none).
+            - No meld can hold the gate: every other thread's meld of the spell was refused by its mark before it
+              reached the gate, and the binding thread is running this unwind.
+
+        Args:
+            gate_controller: The frame's CreationGateController the stamp used.
+            index_id: The index id the gate is registered under.
+
+        Returns:
+            None.
+        """
+        gate = gate_controller.get_spell_index_gate(index_id)
+        if gate is None:
+            return
+        gate_controller.unregister_spell_index_gate(index_id)
+        gate.cleanup()
 
     def _stage_spell_for_structural_phases(self, spell: Spell) -> None:
         """
@@ -6389,6 +6920,14 @@ class Spellbook(Cleanable):
                 if self._conjured and self._conduit is not None:
                     conduit = self._get_required_conduit_surface()
                     caching_enabled = self._resolve_system_caching_enabled()
+                    # Window bookkeeping for the unwind of a refused window (#330, 2026-11-23): the stamp below
+                    # registers a creation gate under the version's own throwaway index, which the fold further
+                    # down replaces with the target index, and may compose the version's managed pool.
+                    composes_pool = (
+                        new_spell.existence is Existence.managed_spell_quantity
+                        and conduit._creations.get_managed_quantity(new_spell.spell_id) is None
+                    )
+                    throwaway_index_id = new_spell.spell_index.id
                     new_spell._add_owned_conduit(
                         conduit._id,
                         conduit._name,
@@ -6397,6 +6936,10 @@ class Spellbook(Cleanable):
                         creation_gate_controller=conduit._creation_gate_controller,
                         caching_enabled=caching_enabled,
                     )
+                    with self._lock:
+                        self._pending_inactive_spells.append((new_spell, throwaway_index_id))
+                        if composes_pool:
+                            self._pending_composed_pool_ids.add(new_spell.spell_id)
                 if self._spell_ids is not None:
                     self._spell_ids.add(new_spell.spell_id)
                 # Fold the parked spell from its own fresh index onto the caller's
@@ -6551,6 +7094,18 @@ class Spellbook(Cleanable):
               completion, and post receives the completed registration. Post runs
               before leaving the bind envelope, not after an outer batch commits.
               Changing callbacks during this operation affects subsequent binds.
+            - A bind after conjure (a late bind) is compiled when its bind window
+              commits: the window's outermost end runs Phases 1-4 on the spells
+              it bound. Until then the spell is marked as being late-bound: a
+              meld that reaches it on another thread raises MeldExecutionError
+              and is retried once the bind finishes, and this thread's melds
+              build it. A commit that refuses the window undoes it before the
+              error propagates: every spell the window bound leaves the Book and
+              every registry (an existing object leaves its store slot and is
+              not disposed), the spells compiled against them are flagged for
+              revalidation, and the error gains a note naming what was undone,
+              so binding again meets the same refusal or, with its cause fixed,
+              binds (#330, 2026-11-23).
 
         Args:
             spell (Any):
@@ -6614,6 +7169,11 @@ class Spellbook(Cleanable):
                 A registration callback failed; the original error is chained.
                 Activation failure retires its unpublished Spell/index. Post
                 failure does not undo the already completed registration.
+            SpellbookValidationError:
+                After conjure, when this bind's own window commits and its
+                Phases 1-4 refuse a spell it bound; the window is undone first
+                (see Contract). Inside an outer bind window the commit, and this
+                error, come at that window's exit.
         """
         self.check_cleaned()
         if spell is None:
@@ -6717,6 +7277,27 @@ class Spellbook(Cleanable):
                 # local-only lookup-key check): claim before committing local maps.
                 self._aetheric_frame.claim_lookup(new_spell._key, new_spell.spell_id)
                 registration_started = True
+                # A bind after conjure is a late bind (#330, 2026-11-23): pin the Book's validation flag up, then
+                # register the lineage marked `late_bind_in_progress` with this thread's id, and only then publish the
+                # Book maps below. A meld on another thread can find the spell only through those maps, so by then it
+                # takes the validation lane and the lane sees the mark: the meld is refused until the window ends,
+                # while this thread's own melds pass. A commit that refuses the window unwinds it from this
+                # bookkeeping (`_unwind_refused_bind_window`); the window end clears the marks and the pin
+                # (`_end_bind_window`). Before conjure nothing can meld, so the lineage is registered unmarked at the
+                # same point.
+                late_bind_thread_id: Optional[int] = None
+                if self._conjured and self._conduit is not None:
+                    with self._lock:
+                        self._pending_late_bind_spell_ids.append(new_spell.spell_id)
+                    self._spellbook_validation_required = True
+                    late_bind_thread_id = threading.get_ident()
+                self._spell_system_states.register_index(
+                    spell_index=new_spell.spell_index,
+                    owner_spellbook_id=self._id,
+                    resolvable=new_spell.resolvable,
+                    binding_key=new_spell._key,
+                    late_bind_thread_id=late_bind_thread_id,
+                )
                 # Publish into the four active maps (_lookup_spells, _spells, and through
                 # _register_owned_spell_id _spells_by_id and _spell_id_pool) under the Book lock, as every
                 # other writer of `_spells` does (removal, notch park and promote, index destruction,
@@ -6751,6 +7332,12 @@ class Spellbook(Cleanable):
                 if self._conjured and self._conduit is not None:
                     conduit = self._get_required_conduit_surface()
                     caching_enabled = self._resolve_system_caching_enabled()
+                    # Whether this stamp composes the managed pool, rather than re-pointing one an earlier
+                    # definition of the same spell_id left: the unwind discards only a pool this window composed.
+                    composes_pool = (
+                        new_spell.existence is Existence.managed_spell_quantity
+                        and conduit._creations.get_managed_quantity(new_spell.spell_id) is None
+                    )
                     new_spell._add_owned_conduit(
                         conduit._id,
                         conduit._name,
@@ -6759,6 +7346,9 @@ class Spellbook(Cleanable):
                         creation_gate_controller=conduit._creation_gate_controller,
                         caching_enabled=caching_enabled,
                     )
+                    if composes_pool:
+                        with self._lock:
+                            self._pending_composed_pool_ids.add(new_spell.spell_id)
                     # Compilation is always full/eager (AOT/JIT knob removed);
                     # post-conjure spells get compiled via the gated revalidation
                     # paths, not via a deferred-resolution flag. One exception
@@ -6773,6 +7363,9 @@ class Spellbook(Cleanable):
                                 new_spell,
                                 new_spell.user_created_object,
                             )
+                            # Only a slot this window filed is taken back if its commit is refused.
+                            with self._lock:
+                                self._pending_registered_slot_keys.add(new_spell.store_key)
                         except Exception as reg_err:
                             self._logger.error(
                                 f"Failed to register existing-object spell into Creations "
@@ -6781,12 +7374,6 @@ class Spellbook(Cleanable):
                                 exc_info=True,
                             )
 
-                self._spell_system_states.register_index(
-                    spell_index=new_spell.spell_index,
-                    owner_spellbook_id=self._id,
-                    resolvable=new_spell.resolvable,
-                    binding_key=new_spell._key,
-                )
                 if self._conjured and self._conduit is not None:
                     self._register_spell_with_risk_manager(
                         self._get_required_conduit_surface()._id,
@@ -6862,10 +7449,13 @@ class Spellbook(Cleanable):
               `RuntimeError` raised here, before any binding is attempted.
             - Transaction window is chosen, not always opened: inside an active
               bind-capable window scan opens nothing; otherwise it opens its own
-              `"bind"` transaction. Neither window makes the scan atomic: ending
-              a bind window unregisters nothing, so when one target's bind
-              raises, the targets bound before it stay registered and the error
-              propagates. (Corrected 2026-10-10; this claimed a rollback.)
+              `"bind"` transaction. Neither window makes the scan atomic against
+              a bind that raises: when one target's bind raises inside the
+              window, the targets bound before it stay registered and the error
+              propagates. (Corrected 2026-10-10; this claimed a rollback.) After
+              conjure, a window whose commit the structural phases refuse is
+              undone whole, the scan's targets with it, and the refusal
+              propagates with a note naming them (#330, 2026-11-23).
             - Pre-conjure books always take the "already active" branch, so a
               pre-conjure scan never opens a transaction of its own.
             - Post-conjure, "already active" means a live BIND session on this
@@ -7133,8 +7723,29 @@ class Spellbook(Cleanable):
         Internal
 
         Update the meld validation gate for this Spellbook.
+
+        Contract:
+            - Writes `required`, except while a late-bind window of this Book is
+              open (`_pending_late_bind_spell_ids` not empty, #330, 2026-11-23):
+              the flag then stays True whatever the RiskManager computed, so every
+              meld of the Book takes the validation lane, where another thread's
+              meld of a window spell is refused. Without the pin, the binding
+              thread's own meld could publish the spell's verdict, lower the flag
+              and let another thread's warm meld serve the uncommitted spell.
+            - The window end drops the pin and asks the RiskManager for a fresh
+              value (`_end_bind_window`).
+
+        Args:
+            required: The value the RiskManager computed from its risk sets.
+
+        Returns:
+            None.
+
+        Threading:
+            Called by the RiskManager outside its locks; reads the bookkeeping
+            list's truthiness without the Book lock (one atomic read).
         """
-        self._spellbook_validation_required = bool(required)
+        self._spellbook_validation_required = bool(required) or bool(self._pending_late_bind_spell_ids)
 
     def _register_conduit_with_risk_manager(self, conduit: Conduit) -> None:
         """
