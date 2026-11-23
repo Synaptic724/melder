@@ -2,13 +2,13 @@
   "corpora": {
     "other": {
       "bundle": {
-        "bytes": 3660246,
-        "lines": 82933,
+        "bytes": 3661318,
+        "lines": 82950,
         "path": "llm_support/llm_full_other.txt",
-        "sha256": "166bea9ff7f5253bf8b642ac93647dcff9bae98ab8f9444acc7210aef80b7a96"
+        "sha256": "47d5e98b3c36a06617ff4bc3c8b596b6fc3012407e3dfaba76ac31f3f37c7335"
       },
-      "content_bytes": 3426551,
-      "content_lines": 79559,
+      "content_bytes": 3427623,
+      "content_lines": 79576,
       "file_count": 421,
       "files": {
         ".gitattributes": {
@@ -2214,9 +2214,9 @@
           "source_encoding": "utf-8"
         },
         "docs/expert/transactions.md": {
-          "content_bytes": 1539,
-          "content_lines": 29,
-          "content_sha256": "b0959b3d5130aa546acd0f070794f5047d3a4c19caea54b196187091a5e7a709",
+          "content_bytes": 2472,
+          "content_lines": 44,
+          "content_sha256": "6f6c88ff4afc54051bc053cc760ad3070f0f54bbd79a58ea4ca59fa387608a8d",
           "source_encoding": "utf-8"
         },
         "docs/expert/walkthroughs.md": {
@@ -2508,9 +2508,9 @@
           "source_encoding": "utf-8"
         },
         "release_docs/next_version_release.md": {
-          "content_bytes": 11111,
-          "content_lines": 153,
-          "content_sha256": "e4903047ec909f7aee21b31125333639b4471234481a3a8f5ab9b34726ea0597",
+          "content_bytes": 11250,
+          "content_lines": 155,
+          "content_sha256": "8a2d46e35dcdba8e3284bc6b7cbe0be7a4ecff9c5494aa8f441eda169bdb49db",
           "source_encoding": "utf-8"
         },
         "requirements.txt": {
@@ -2542,9 +2542,9 @@
         "bytes": 70472,
         "lines": 443,
         "path": "llm_support/llm_full_other_index.md",
-        "sha256": "630c64612d5846cdea2c2e7f1d98ee95b4e4903c6d9aeb8c1bdd3f96bba76a15"
+        "sha256": "045f92eec1d406fb1c994209e837feca7bbacbdc3a91a47a336b07c8b65675b2"
       },
-      "source_fingerprint": "71694d16d9f865ddd4863a357a8ce64df543d027e024d9dc766be0aa8e7dc466"
+      "source_fingerprint": "206797ab21a18544956eb942f937c4cdaca2b7fd2c8bc859e0495d2a1ece3916"
     },
     "src": {
       "bundle": {

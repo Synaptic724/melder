@@ -1,7 +1,7 @@
 GENERATED REPOSITORY ASSET - DO NOT EDIT MANUALLY.
 AUTHORITY: Use context_compass/AGENTS.MD and ContextCompass first.
 CORPUS: other
-SOURCE FINGERPRINT: 71694d16d9f865ddd4863a357a8ce64df543d027e024d9dc766be0aa8e7dc466
+SOURCE FINGERPRINT: 206797ab21a18544956eb942f937c4cdaca2b7fd2c8bc859e0495d2a1ece3916
 FILE COUNT: 421
 
 ================================================================================
@@ -73417,7 +73417,7 @@ END FILE: docs/expert/self-documents.md
 ================================================================================
 ================================================================================
 BEGIN FILE: docs/expert/transactions.md
-CONTENT SHA256: b0959b3d5130aa546acd0f070794f5047d3a4c19caea54b196187091a5e7a709
+CONTENT SHA256: 6f6c88ff4afc54051bc053cc760ad3070f0f54bbd79a58ea4ca59fa387608a8d
 SOURCE ENCODING: utf-8
 ================================================================================
 # Structural operations and admission
@@ -73434,6 +73434,21 @@ modes. Resolution uses its own validity and creation gates. A failure at an
 admission or posture gate should be diagnosed at the boundary named by the error.
 The rewiring lesson demonstrates both a static world and a dynamic world whose
 posture explicitly disables linking.
+
+## A refused late bind is undone
+
+A bind after `conjure` is checked when its bind window commits: at the end of the
+`bind` call, or at the exit of an explicit `with book.transaction("bind"):`. When
+that check refuses a spell, the whole window is undone before the error reaches
+you. Every spell the window bound leaves the Book, an existing object bound in it
+is let go without being disposed, and the error carries a note naming what was
+undone. Fix the cause and bind again; the retry is not refused as a duplicate. A
+window whose own body raises is not undone: what it bound before the error stays.
+
+While a late bind's window is open, a meld on another thread that would build one
+of its spells, or a consumer that resolves one, raises `MeldExecutionError` saying
+the spell "is being late-bound by another thread". Nothing waits: meld again once
+the bind finishes. The thread that holds the window melds what it binds as usual.
 
 ## A gate is more than a mutex
 
@@ -81687,7 +81702,7 @@ END FILE: release_docs/0.2.8310.md
 ================================================================================
 ================================================================================
 BEGIN FILE: release_docs/next_version_release.md
-CONTENT SHA256: e4903047ec909f7aee21b31125333639b4471234481a3a8f5ab9b34726ea0597
+CONTENT SHA256: 8a2d46e35dcdba8e3284bc6b7cbe0be7a4ecff9c5494aa8f441eda169bdb49db
 SOURCE ENCODING: utf-8
 ================================================================================
 # Melder 0.2.8316
@@ -81840,7 +81855,9 @@ describe them.
 
 The docstrings of `Spellbook.bind`, `Spellbook.transaction` and `Spellbook.scan` describe the undone late bind, and
 `SpellState` gains the member `late_bind_in_progress`, declared after the existing members (their legacy numbers are
-unchanged). The source and test maps, their indexes and the source graph describe the change (GitHub issue #330).
+unchanged). `docs/expert/transactions.md` gains a section on the undone late bind and on retrying a meld that lands
+inside another thread's late bind. The source and test maps, their indexes and the source graph describe the change
+(GitHub issue #330).
 
 Agent documentation metadata and the whole-repository LLM bundles are rebuilt for 0.2.8316.
 ================================================================================

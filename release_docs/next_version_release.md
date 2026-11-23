@@ -148,6 +148,8 @@ describe them.
 
 The docstrings of `Spellbook.bind`, `Spellbook.transaction` and `Spellbook.scan` describe the undone late bind, and
 `SpellState` gains the member `late_bind_in_progress`, declared after the existing members (their legacy numbers are
-unchanged). The source and test maps, their indexes and the source graph describe the change (GitHub issue #330).
+unchanged). `docs/expert/transactions.md` gains a section on the undone late bind and on retrying a meld that lands
+inside another thread's late bind. The source and test maps, their indexes and the source graph describe the change
+(GitHub issue #330).
 
 Agent documentation metadata and the whole-repository LLM bundles are rebuilt for 0.2.8316.
