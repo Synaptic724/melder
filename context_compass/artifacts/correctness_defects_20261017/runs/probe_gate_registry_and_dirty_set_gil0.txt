@@ -1,0 +1,10 @@
+python 3.14.7 gil_enabled False
+after conjure and a meld of Root0: live indexes 1; gates 1, of them under no live index 0; dirty set 1, of them no live index 0
+step 1, after five post-conjure bind_inactive: live indexes 1; gates 6, of them under no live index 5; dirty set 1, of them no live index 0
+step 2, after five binds removed by cleanup_spell: live indexes 1; gates 11, of them under no live index 10; dirty set 1, of them no live index 0
+step 3, notched to the last staged version and melded: version 5
+step 3: live indexes 1; gates 11, of them under no live index 10; dirty set 1, of them no live index 0
+C3: the version's own gate is the one registered under its current index id: False
+C3: the version's own gate is registered under: 1 key(s), none its index
+C4: dirty-set readers - consume_dirty_indexes is never called by melder; a manual call drains 1 ids
+exit gil=0: 0

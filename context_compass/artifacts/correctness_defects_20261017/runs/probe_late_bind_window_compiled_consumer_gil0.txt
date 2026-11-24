@@ -1,0 +1,30 @@
+python 3.14.7 gil_enabled False
+--- W1
+after Alpha's late bind committed: Needy gated
+inside the window: Beta is marked late-bound: True
+binding thread melds Needy: built; its Beta was built on MainThread
+Needy after the binding thread's meld: valid
+second thread melding Needy, inside the window: built Needy; its Beta was built on second-thread
+window committed
+exit W1 gil=0: 0
+--- W1b
+after Alpha's late bind committed: Needy gated
+inside the window: Beta is marked late-bound: True
+binding thread melds Beta: built on MainThread
+binding thread melds Needy: built; its Beta was built on MainThread
+Needy after the binding thread's meld: valid
+second thread melding Needy, inside the window: built Needy; its Beta was built on second-thread
+window committed
+exit W1b gil=0: 0
+--- W2
+after Alpha's late bind committed: Needy gated
+inside the window: Beta is marked late-bound: True
+second thread melding Needy, inside the window: MeldExecutionError: [MELD] Execution failed for spell 'Needy' (3ec3bef54b6f5ffdae269e27339eb1b83db32d0269dcaa28d9bee57c9f93fab4): Cannot meld 'Needy' now: its plan resolves 'Beta' (spell_id 
+window committed
+exit W2 gil=0: 0
+--- W3
+after Alpha's late bind committed: Needy gated
+inside the window: Beta is marked late-bound: True
+second thread melding Beta, inside the window: MeldExecutionError: [MELD] Execution failed for spell 'Beta' (4579cd854aa98e5148c95673b7a09ce291b1f6855c2d1dda5c7d6d7bb43144de): 'Beta' (spell_id 4579cd854aa98e5148c95673b7a09ce291b1f6855c2d
+window committed
+exit W3 gil=0: 0

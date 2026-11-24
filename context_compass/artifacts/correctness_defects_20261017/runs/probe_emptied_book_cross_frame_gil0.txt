@@ -1,0 +1,17 @@
+python 3.14.7 gil_enabled False
+--- X1
+process-wide spell ids: True
+Book A holds 1 spell(s); frame xf-one keeps its spell-id link: False
+Book C of frame xf-two binds XShared: went through
+exit X1 gil=0: 0
+--- X2
+process-wide spell ids: True
+Book A holds 2 spell(s); frame xf-one keeps its spell-id link: True
+Book C of frame xf-two binds XShared: RuntimeError: Spell ID collision detected: this object is already registered as spell_id 5502942de544b13078e99f8f531efd5409b ...
+exit X2 gil=0: 0
+--- X3
+process-wide spell ids: True
+Book A holds 1 spell(s); frame xf-one keeps its spell-id link: False
+Book D of frame xf-one binds XShared before its conjure: went through
+Book D conjures: went through
+exit X3 gil=0: 0
