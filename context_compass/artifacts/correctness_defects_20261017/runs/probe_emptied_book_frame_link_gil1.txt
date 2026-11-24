@@ -1,0 +1,17 @@
+python 3.14.7 gil_enabled True
+C:\Users\Mark\PycharmProjects\melder_private\src\melder\__init__.py:199: UserWarning: Python 3.14+ detected, but running in GIL-enabled mode.
+melder is optimized for Python built with --disable-gil (PEP 703).
+Performance may be degraded.
+  warnings.warn(
+--- probe-emptied: A is emptied by cleanup_spell
+after binding EmptiedFirst: index set registered=True, spell-id link registered=True
+after cleanup_spell(EmptiedFirst): Book A holds 0 spell(s); index set registered=False, spell-id link registered=False
+after A binds EmptiedSecond: index set registered=True, spell-id link registered=False
+frame finds EmptiedSecond's spell_id: False
+Book B binds EmptiedSecond too: TWO spells for one object (refusal missing)
+--- probe-control: control, A keeps a spell
+after binding ControlFirst: index set registered=True, spell-id link registered=True
+after cleanup_spell(ControlFirst): Book A holds 1 spell(s); index set registered=True, spell-id link registered=True
+after A binds ControlSecond: index set registered=True, spell-id link registered=True
+frame finds ControlSecond's spell_id: True
+Book B refused: Spell ID collision detected: this object is already registered as spell_id 3be73771a8cf1b5 ...
