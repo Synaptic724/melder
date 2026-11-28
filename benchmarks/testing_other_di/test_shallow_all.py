@@ -1799,6 +1799,11 @@ def test_threaded_di_stress_rotation_all_graphs(lib: str) -> None:
     stop_event = threading.Event()
     start_barrier = threading.Barrier(cfg.threads + 1)
     stop_time_holder: list[float] = [0.0]
+    # The deadline is published before any worker reads it: the workers and this thread meet at the barrier, this
+    # thread stamps the deadline and sets the event, and only then does a worker read it. Read straight after the
+    # barrier it raced this thread's write: a worker that won read the initial 0.0, never entered its loop, and the
+    # run reported steps=0 in 0.00s.
+    deadline_published = threading.Event()
     selector_seed = cfg.random_seed
 
     def worker(ix: int) -> None:
@@ -1809,6 +1814,7 @@ def test_threaded_di_stress_rotation_all_graphs(lib: str) -> None:
 
             try:
                 start_barrier.wait()
+                deadline_published.wait()
                 stop_at = stop_time_holder[0]
 
                 local_i = 0
@@ -1892,6 +1898,7 @@ def test_threaded_di_stress_rotation_all_graphs(lib: str) -> None:
     start_barrier.wait()
     start_t = time.perf_counter()
     stop_time_holder[0] = start_t + cfg.duration_s
+    deadline_published.set()
 
     for t in threads_list:
         t.join()
@@ -1927,6 +1934,13 @@ def test_threaded_di_stress_rotation_all_graphs(lib: str) -> None:
             f"spellspaces={total_spaces}, errors={total_err}, "
             f"per_graph=({per_graph_summary})"
         )
+        # A run that did no steps measured nothing; fail it rather than pass with zero throughput.
+        if total_steps == 0:
+            raise AssertionError(
+                f"[{ops.name}] ROTATION did no steps in {elapsed_s:.2f}s with {cfg.threads} thread(s), so it measured "
+                "nothing: no worker finished an iteration of its timed loop. Check that each worker reads the "
+                "deadline only after the main thread has published it."
+            )
 
     finally:
         ops.cleanup()
@@ -1963,6 +1977,9 @@ def test_threaded_di_stress_per_graph(graph: str, lib: str) -> None:
     stop_event = threading.Event()
     start_barrier = threading.Barrier(cfg.threads + 1)
     stop_time_holder: list[float] = [0.0]
+    # Published before any worker reads it, as in the rotation test: read straight after the barrier, the deadline
+    # raced this thread's write, and a worker that won read 0.0 and ran no steps.
+    deadline_published = threading.Event()
     selector_seed = cfg.random_seed
 
     def worker(ix: int) -> None:
@@ -1973,6 +1990,7 @@ def test_threaded_di_stress_per_graph(graph: str, lib: str) -> None:
 
             try:
                 start_barrier.wait()
+                deadline_published.wait()
                 stop_at = stop_time_holder[0]
 
                 local_i = 0
@@ -2032,6 +2050,7 @@ def test_threaded_di_stress_per_graph(graph: str, lib: str) -> None:
     start_barrier.wait()
     start_t = time.perf_counter()
     stop_time_holder[0] = start_t + cfg.duration_s
+    deadline_published.set()
 
     for t in threads_list:
         t.join()
@@ -2052,5 +2071,12 @@ def test_threaded_di_stress_per_graph(graph: str, lib: str) -> None:
             f"steps={total_steps}, steps/s={steps_per_s:,.0f}, "
             f"spellspaces={total_spaces}, errors={total_err}"
         )
+        # A run that did no steps measured nothing; fail it rather than pass with zero throughput.
+        if total_steps == 0:
+            raise AssertionError(
+                f"[{ops.name}] per-graph ({g.name}) did no steps in {elapsed_s:.2f}s with {cfg.threads} thread(s), so "
+                "it measured nothing: no worker finished an iteration of its timed loop. Check that each worker reads "
+                "the deadline only after the main thread has published it."
+            )
     finally:
         ops.cleanup()

@@ -2,13 +2,13 @@
   "corpora": {
     "other": {
       "bundle": {
-        "bytes": 3665559,
-        "lines": 83014,
+        "bytes": 3668409,
+        "lines": 83054,
         "path": "llm_support/llm_full_other.txt",
-        "sha256": "f666559aa853fbd73a22c2b94134317508e2e949e1cfca8c0d803aa20d7cadb4"
+        "sha256": "b4b37ccfefbbbc53559cf28398106324f5d07e96fa056bcb82bf78a12ed4f275"
       },
-      "content_bytes": 3431864,
-      "content_lines": 79640,
+      "content_bytes": 3434714,
+      "content_lines": 79680,
       "file_count": 421,
       "files": {
         ".gitattributes": {
@@ -1932,9 +1932,9 @@
           "source_encoding": "utf-8"
         },
         "benchmarks/testing_other_di/test_multithreading_di.py": {
-          "content_bytes": 22263,
-          "content_lines": 653,
-          "content_sha256": "abd84c14e6aff146eb58a904b94ae0be74a366f17c4ebb7f43cb058c8fa4e835",
+          "content_bytes": 23335,
+          "content_lines": 667,
+          "content_sha256": "4b33f4ee32328528ac346d51001e6c0b8eb352bc6122fe54448fec6c37b8bb71",
           "source_encoding": "utf-8"
         },
         "benchmarks/testing_other_di/test_overrides_all.py": {
@@ -1986,9 +1986,9 @@
           "source_encoding": "utf-8"
         },
         "benchmarks/testing_other_di/test_shallow_all.py": {
-          "content_bytes": 65601,
-          "content_lines": 2056,
-          "content_sha256": "e854922e9ea33a80df7c6eeb9e0a33662f7c21a218507aceaff68a11f349c52d",
+          "content_bytes": 67379,
+          "content_lines": 2082,
+          "content_sha256": "d0e714c104e523b913133b78441d6fe4e29bd23fd301ea24716ea1d2640a7cd2",
           "source_encoding": "utf-8"
         },
         "benchmarks/testing_other_di/test_shallow_all_diagnostics.py": {
@@ -2542,9 +2542,9 @@
         "bytes": 70472,
         "lines": 443,
         "path": "llm_support/llm_full_other_index.md",
-        "sha256": "1efa583c9f926b2f5684ed2f43f79a3762e3d8c0db08cd0b11fcb596eb833cd2"
+        "sha256": "8659a63c67e4c75b044f1ef0d677ec4ac9ee2005bbd10e8119c9cbe85190c6ae"
       },
-      "source_fingerprint": "d861230b278606f58e999fbb33944a696ae42db3d1e2ca2baee363dee79d359e"
+      "source_fingerprint": "894a92e900e144a22c7204e76e56d39c03606e8a29a6289002c2f48a68f39f86"
     },
     "src": {
       "bundle": {

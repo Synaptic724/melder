@@ -568,7 +568,7 @@ def test_threaded_di_stress_10_threads_60s(lib: str) -> None:
         - DI_GC_EVERY (default 2000)
     Notes:
         - This is a throughput/lock-contention stress test, not a microbenchmark.
-        - It prints totals and ops/sec; it asserts only on correctness invariants.
+        - It prints totals and ops/sec; it asserts on correctness invariants and that the run did steps.
         - It is intentionally configured to avoid singleton-style caching for Depth9 leaves across resolves.
           (Spellspace caching for Depth3 is still validated within a single spellspace cycle.)
     """
@@ -585,10 +585,16 @@ def test_threaded_di_stress_10_threads_60s(lib: str) -> None:
     start_barrier = threading.Barrier(threads + 1)
 
     stop_time_holder: list[float] = [0.0]
+    # The deadline is published before any worker reads it: the workers and this thread meet at the barrier, this
+    # thread stamps the deadline and sets the event, and only then does a worker read it. Read straight after the
+    # barrier it raced this thread's write: a worker that won read the initial 0.0, never entered its loop, and the
+    # run reported steps=0 in 0.00s.
+    deadline_published = threading.Event()
 
     def worker(ix: int) -> None:
         try:
             start_barrier.wait()
+            deadline_published.wait()
             stop_at = stop_time_holder[0]
             local_i = 0
             local_stats = stats[ix]
@@ -622,10 +628,11 @@ def test_threaded_di_stress_10_threads_60s(lib: str) -> None:
         threads_list.append(t)
         t.start()
 
-    # Start all threads together, then set stop time.
+    # Start all threads together, then set the stop time and release the workers to read it.
     start_barrier.wait()
     start_t = time.perf_counter()
     stop_time_holder[0] = start_t + duration_s
+    deadline_published.set()
 
     for t in threads_list:
         t.join()
@@ -649,5 +656,12 @@ def test_threaded_di_stress_10_threads_60s(lib: str) -> None:
             f"steps={total_steps}, steps/s={steps_per_s:,.0f}, "
             f"d9={total_d9}, d7={total_d7}, spellspaces={total_spaces}, errors={total_err}"
         )
+        # A run that did no steps measured nothing; fail it rather than pass with zero throughput.
+        if total_steps == 0:
+            raise AssertionError(
+                f"[{ops.name}] threaded stress did no steps in {elapsed_s:.2f}s with {threads} thread(s), so it "
+                "measured nothing: no worker finished an iteration of its timed loop. Check that DI_DURATION_S is "
+                "above zero and that each worker reads the deadline only after the main thread has published it."
+            )
     finally:
         ops.cleanup()

@@ -1,7 +1,7 @@
 GENERATED REPOSITORY ASSET - DO NOT EDIT MANUALLY.
 AUTHORITY: Use context_compass/AGENTS.MD and ContextCompass first.
 CORPUS: other
-SOURCE FINGERPRINT: d861230b278606f58e999fbb33944a696ae42db3d1e2ca2baee363dee79d359e
+SOURCE FINGERPRINT: 894a92e900e144a22c7204e76e56d39c03606e8a29a6289002c2f48a68f39f86
 FILE COUNT: 421
 
 ================================================================================
@@ -61901,7 +61901,7 @@ END FILE: benchmarks/testing_other_di/test_melder_single_meld_lock_and_check_cle
 ================================================================================
 ================================================================================
 BEGIN FILE: benchmarks/testing_other_di/test_multithreading_di.py
-CONTENT SHA256: abd84c14e6aff146eb58a904b94ae0be74a366f17c4ebb7f43cb058c8fa4e835
+CONTENT SHA256: 4b33f4ee32328528ac346d51001e6c0b8eb352bc6122fe54448fec6c37b8bb71
 SOURCE ENCODING: utf-8
 ================================================================================
 from __future__ import annotations
@@ -62474,7 +62474,7 @@ def test_threaded_di_stress_10_threads_60s(lib: str) -> None:
         - DI_GC_EVERY (default 2000)
     Notes:
         - This is a throughput/lock-contention stress test, not a microbenchmark.
-        - It prints totals and ops/sec; it asserts only on correctness invariants.
+        - It prints totals and ops/sec; it asserts on correctness invariants and that the run did steps.
         - It is intentionally configured to avoid singleton-style caching for Depth9 leaves across resolves.
           (Spellspace caching for Depth3 is still validated within a single spellspace cycle.)
     """
@@ -62491,10 +62491,16 @@ def test_threaded_di_stress_10_threads_60s(lib: str) -> None:
     start_barrier = threading.Barrier(threads + 1)
 
     stop_time_holder: list[float] = [0.0]
+    # The deadline is published before any worker reads it: the workers and this thread meet at the barrier, this
+    # thread stamps the deadline and sets the event, and only then does a worker read it. Read straight after the
+    # barrier it raced this thread's write: a worker that won read the initial 0.0, never entered its loop, and the
+    # run reported steps=0 in 0.00s.
+    deadline_published = threading.Event()
 
     def worker(ix: int) -> None:
         try:
             start_barrier.wait()
+            deadline_published.wait()
             stop_at = stop_time_holder[0]
             local_i = 0
             local_stats = stats[ix]
@@ -62528,10 +62534,11 @@ def test_threaded_di_stress_10_threads_60s(lib: str) -> None:
         threads_list.append(t)
         t.start()
 
-    # Start all threads together, then set stop time.
+    # Start all threads together, then set the stop time and release the workers to read it.
     start_barrier.wait()
     start_t = time.perf_counter()
     stop_time_holder[0] = start_t + duration_s
+    deadline_published.set()
 
     for t in threads_list:
         t.join()
@@ -62555,6 +62562,13 @@ def test_threaded_di_stress_10_threads_60s(lib: str) -> None:
             f"steps={total_steps}, steps/s={steps_per_s:,.0f}, "
             f"d9={total_d9}, d7={total_d7}, spellspaces={total_spaces}, errors={total_err}"
         )
+        # A run that did no steps measured nothing; fail it rather than pass with zero throughput.
+        if total_steps == 0:
+            raise AssertionError(
+                f"[{ops.name}] threaded stress did no steps in {elapsed_s:.2f}s with {threads} thread(s), so it "
+                "measured nothing: no worker finished an iteration of its timed loop. Check that DI_DURATION_S is "
+                "above zero and that each worker reads the deadline only after the main thread has published it."
+            )
     finally:
         ops.cleanup()
 ================================================================================
@@ -67883,7 +67897,7 @@ END FILE: benchmarks/testing_other_di/test_real_world_gauntlet_threads.py
 ================================================================================
 ================================================================================
 BEGIN FILE: benchmarks/testing_other_di/test_shallow_all.py
-CONTENT SHA256: e854922e9ea33a80df7c6eeb9e0a33662f7c21a218507aceaff68a11f349c52d
+CONTENT SHA256: d0e714c104e523b913133b78441d6fe4e29bd23fd301ea24716ea1d2640a7cd2
 SOURCE ENCODING: utf-8
 ================================================================================
 from __future__ import annotations
@@ -69687,6 +69701,11 @@ def test_threaded_di_stress_rotation_all_graphs(lib: str) -> None:
     stop_event = threading.Event()
     start_barrier = threading.Barrier(cfg.threads + 1)
     stop_time_holder: list[float] = [0.0]
+    # The deadline is published before any worker reads it: the workers and this thread meet at the barrier, this
+    # thread stamps the deadline and sets the event, and only then does a worker read it. Read straight after the
+    # barrier it raced this thread's write: a worker that won read the initial 0.0, never entered its loop, and the
+    # run reported steps=0 in 0.00s.
+    deadline_published = threading.Event()
     selector_seed = cfg.random_seed
 
     def worker(ix: int) -> None:
@@ -69697,6 +69716,7 @@ def test_threaded_di_stress_rotation_all_graphs(lib: str) -> None:
 
             try:
                 start_barrier.wait()
+                deadline_published.wait()
                 stop_at = stop_time_holder[0]
 
                 local_i = 0
@@ -69780,6 +69800,7 @@ def test_threaded_di_stress_rotation_all_graphs(lib: str) -> None:
     start_barrier.wait()
     start_t = time.perf_counter()
     stop_time_holder[0] = start_t + cfg.duration_s
+    deadline_published.set()
 
     for t in threads_list:
         t.join()
@@ -69815,6 +69836,13 @@ def test_threaded_di_stress_rotation_all_graphs(lib: str) -> None:
             f"spellspaces={total_spaces}, errors={total_err}, "
             f"per_graph=({per_graph_summary})"
         )
+        # A run that did no steps measured nothing; fail it rather than pass with zero throughput.
+        if total_steps == 0:
+            raise AssertionError(
+                f"[{ops.name}] ROTATION did no steps in {elapsed_s:.2f}s with {cfg.threads} thread(s), so it measured "
+                "nothing: no worker finished an iteration of its timed loop. Check that each worker reads the "
+                "deadline only after the main thread has published it."
+            )
 
     finally:
         ops.cleanup()
@@ -69851,6 +69879,9 @@ def test_threaded_di_stress_per_graph(graph: str, lib: str) -> None:
     stop_event = threading.Event()
     start_barrier = threading.Barrier(cfg.threads + 1)
     stop_time_holder: list[float] = [0.0]
+    # Published before any worker reads it, as in the rotation test: read straight after the barrier, the deadline
+    # raced this thread's write, and a worker that won read 0.0 and ran no steps.
+    deadline_published = threading.Event()
     selector_seed = cfg.random_seed
 
     def worker(ix: int) -> None:
@@ -69861,6 +69892,7 @@ def test_threaded_di_stress_per_graph(graph: str, lib: str) -> None:
 
             try:
                 start_barrier.wait()
+                deadline_published.wait()
                 stop_at = stop_time_holder[0]
 
                 local_i = 0
@@ -69920,6 +69952,7 @@ def test_threaded_di_stress_per_graph(graph: str, lib: str) -> None:
     start_barrier.wait()
     start_t = time.perf_counter()
     stop_time_holder[0] = start_t + cfg.duration_s
+    deadline_published.set()
 
     for t in threads_list:
         t.join()
@@ -69940,6 +69973,13 @@ def test_threaded_di_stress_per_graph(graph: str, lib: str) -> None:
             f"steps={total_steps}, steps/s={steps_per_s:,.0f}, "
             f"spellspaces={total_spaces}, errors={total_err}"
         )
+        # A run that did no steps measured nothing; fail it rather than pass with zero throughput.
+        if total_steps == 0:
+            raise AssertionError(
+                f"[{ops.name}] per-graph ({g.name}) did no steps in {elapsed_s:.2f}s with {cfg.threads} thread(s), so "
+                "it measured nothing: no worker finished an iteration of its timed loop. Check that each worker reads "
+                "the deadline only after the main thread has published it."
+            )
     finally:
         ops.cleanup()
 ================================================================================
