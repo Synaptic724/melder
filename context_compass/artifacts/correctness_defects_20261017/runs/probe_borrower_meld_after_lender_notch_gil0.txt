@@ -1,0 +1,12 @@
+by_id: the borrower melds version 1 before the notch: version 1
+by_id: after the notch, validation_required - lender Book True, borrower Book False
+by_id: the borrower's meld raised RuntimeError: Cannot build CreationContext before spell_codegen_creation exists. Run analyzer -> processor -> planner -> codegen creation first.
+by_class: the borrower melds version 1 before the notch: version 1
+by_class: after the notch, validation_required - lender Book True, borrower Book False
+by_class: the borrower's meld raised RuntimeError: Cannot build CreationContext before spell_codegen_creation exists. Run analyzer -> processor -> planner -> codegen creation first.
+by_name: the borrower melds version 1 before the notch: version 1
+by_name: after the notch, validation_required - lender Book True, borrower Book False
+by_name: the borrower's meld raised RuntimeError: Cannot build CreationContext before spell_codegen_creation exists. Run analyzer -> processor -> planner -> codegen creation first.
+lender_first: the borrower melds version 1 before the notch: version 1
+lender_first: after the notch, validation_required - lender Book True, borrower Book False
+lender_first: the borrower builds version 2

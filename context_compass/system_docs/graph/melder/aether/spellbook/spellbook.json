@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/spellbook/spellbook.py",
- "source_sha256": "469b6f5a3bfba1b44abf0412375f69e8a723e665d72c9ce427e843021765133a",
+ "source_sha256": "e8ab547add6d062d47d514c375f8204337c7bd3d916e23105f51ee931569907a",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.spellbook.spellbook": {
@@ -56,11 +56,11 @@
     "transaction"
    ],
    "shape": {
-    "method_count": 162,
+    "method_count": 164,
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "6f5fa7c34793529f22ad130edb66a90bf2623aaa70b74e84f73a85d457a3c854",
+   "span_sha256": "b5e166f4e539fee04a856939513e4f10a940f9676021dbea0983c95cf5caaba9",
    "role": "Public binding, validation, and conjure surface.",
    "responsibilities": [
     "binds and scans spells into local and contracted lookup surfaces",
@@ -102,7 +102,9 @@
     "checks a notch's incoming version before anything moves: under the Book lock, after its no-op return and before the address claim moves, _apply_notch refuses a version that is not the one _inactive_spells holds under its spell_id, whose index (read through Spell._spell_index_unless_cleaned) is not the index notched, or that a cleanup_spell is disposing (its spell_id in _disposing_spell_ids: still parked while _dispose_spell releases its contracts with no Book lock held) (_refuse_unparked_incoming: RuntimeError naming the version still active, or that the index has none, and the remedy where one exists), so a cleanup_spell of the target racing the notch - it takes no transaction - leaves the index's active version, claim and routes in place, and a version parked in another index is no longer promoted under this one (0.2.8285)",
     "marks a bind after conjure before publishing it: pins its validation flag up (_pending_late_bind_spell_ids, read by _set_spellbook_validation_required), registers the lineage with the binding thread's id, then publishes the Book maps (#330, 0.2.8316)",
     "undoes a bind window whose commit the structural validator refused (_unwind_refused_bind_window, called by ChangeControlManager's default abort hook with the window's claims held): each late bind and parked mate leaves every registry, a filed existing-object slot is forgotten undisposed, a composed managed pool is discarded, the consumers refused because of the window are re-gated, and the refusal gains a note; every step is best-effort and logged (#330, 0.2.8316)",
-    "ends every bind window in end_transaction's finally (_end_bind_window): clears the late-bind marks still registered, the window's bookkeeping and the flag pin, and has the RiskManager recompute the flag (#330, 0.2.8316)"
+    "ends every bind window in end_transaction's finally (_end_bind_window): clears the late-bind marks still registered, the window's bookkeeping and the flag pin, and has the RiskManager recompute the flag (#330, 0.2.8316)",
+    "keeps its own indexes by id in _spell_indexes_by_id, exactly the keys of _spells, written beside every _spells write under its lock (bind, the notch's park and promotion, removal, index destruction, the unwind, teardown; the ownership transfer writes it for both Books) (#346, 0.2.8317)",
+    "answers a meld by index id with the spell_id of the version the index has active (_selected_spell_id_for_index_id: one lock-free read of _spell_indexes_by_id, then of _contracted_indexes), and an id it cannot answer with a KeyError naming the index's parked versions when it holds only those (_unknown_spell_index_id_error) (#346, 0.2.8317)"
    ],
    "owns_state": [
     "_bind",
@@ -115,7 +117,8 @@
     "_pending_late_bind_spell_ids",
     "_pending_inactive_spells",
     "_pending_composed_pool_ids",
-    "_pending_registered_slot_keys"
+    "_pending_registered_slot_keys",
+    "_spell_indexes_by_id"
    ],
    "phases": [
     "init",
@@ -123,7 +126,7 @@
     "runtime",
     "cleanup"
    ],
-   "semantics_authored_against": "6f5fa7c34793529f22ad130edb66a90bf2623aaa70b74e84f73a85d457a3c854"
+   "semantics_authored_against": "b5e166f4e539fee04a856939513e4f10a940f9676021dbea0983c95cf5caaba9"
   }
  },
  "edges_out": [
@@ -174,6 +177,12 @@
   {
    "from": "melder.aether.spellbook.spellbook.Spellbook",
    "to_label": "RuntimeError",
+   "relation": "creates",
+   "confidence": "candidate"
+  },
+  {
+   "from": "melder.aether.spellbook.spellbook.Spellbook",
+   "to_label": "KeyError",
    "relation": "creates",
    "confidence": "candidate"
   },

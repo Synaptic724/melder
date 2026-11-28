@@ -517,6 +517,9 @@ class _SpellbookStub:
         # never called, matching the common no-cache-staged posture.
         self._cache_emit_required = False
         self._spell_id_pool: Dict[str, SpellIndex] = {}
+        # The Book's parked maps, which a meld door's spell_id miss reads to name a parked version's index (#346).
+        self._inactive_spells: Dict[str, _SpellStub] = {}
+        self._inactive_contracted_spells: Dict[str, Dict[str, _SpellStub]] = {}
         self._logger = MagicMock()
 
     def _run_resolution_phases_for_target_spell(

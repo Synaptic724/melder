@@ -12,10 +12,10 @@ Line numbers are 1-based and inclusive on both ends.
 | --- | --- |
 | document | `tests_components.md` |
 | index_version | 1.1.0 |
-| generated_at | 2026-11-23T11:01:38Z |
-| line_count | 6478 |
+| generated_at | 2026-11-28T19:50:31Z |
+| line_count | 6500 |
 | line_ending | lf |
-| content_sha256 | `e1ef779577bf5f7de95931f90c58aa406c8a302aaebaf8e1e60fe8b23ea26985` |
+| content_sha256 | `7ee0377f76ccff23dea0a89e8ad0800c89783d72b2d2ffcec2444191a67e3f12` |
 | sections | 82 |
 
 Recompute all three of `line_count`, `line_ending`, and `content_sha256`
@@ -46,7 +46,7 @@ which you did.
 | 870-932 | 3 | C3 Components Catalog > Component: Experimentation And Profiling Trees (Local Only) |
 | 933-966 | 3 | C3 Components Catalog > Component: Native Enum and Cached Terminal State Contracts |
 | 967-1042 | 3 | C3 Components Catalog > Component: String Enum Compatibility and Persistence Tests |
-| 1043-2931 | 2 | C2 Subcomponents Catalog |
+| 1043-2940 | 2 | C2 Subcomponents Catalog |
 | 1045-1053 | 3 | C2 Subcomponents Catalog > Subcomponent: `conftest.py` Path Bootstrap |
 | 1054-1064 | 3 | C2 Subcomponents Catalog > Subcomponent: Frame Posture Test Support |
 | 1065-1077 | 3 | C2 Subcomponents Catalog > Subcomponent: Nexus Viewer Matrix Support |
@@ -68,44 +68,44 @@ which you did.
 | 1886-1904 | 3 | C2 Subcomponents Catalog > Subcomponent: Build Assets Unit Cluster |
 | 1905-1969 | 3 | C2 Subcomponents Catalog > Subcomponent: Utilities Unit Cluster |
 | 1970-2034 | 3 | C2 Subcomponents Catalog > Subcomponent: Repository Tooling Unit Cluster |
-| 2035-2250 | 3 | C2 Subcomponents Catalog > Subcomponent: Aether Component Cluster |
-| 2251-2263 | 3 | C2 Subcomponents Catalog > Subcomponent: Crystallizer Component Cluster |
-| 2264-2274 | 3 | C2 Subcomponents Catalog > Subcomponent: MutationResearch Component Cluster |
-| 2275-2374 | 3 | C2 Subcomponents Catalog > Subcomponent: Spellbook Runtime And Binding Component Cluster |
-| 2375-2398 | 3 | C2 Subcomponents Catalog > Subcomponent: Spellbook Compiler Component Cluster |
-| 2399-2414 | 3 | C2 Subcomponents Catalog > Subcomponent: Utilities Component Cluster |
-| 2415-2503 | 3 | C2 Subcomponents Catalog > Subcomponent: Aether Integration Cluster |
-| 2504-2565 | 3 | C2 Subcomponents Catalog > Subcomponent: Crystallizer Integration Cluster |
-| 2566-2582 | 3 | C2 Subcomponents Catalog > Subcomponent: MutationResearch Integration Cluster |
-| 2583-2746 | 3 | C2 Subcomponents Catalog > Subcomponent: Spellbook Integration Cluster |
-| 2747-2866 | 3 | C2 Subcomponents Catalog > Subcomponent: Conduit Integration Cluster |
-| 2867-2895 | 3 | C2 Subcomponents Catalog > Subcomponent: Multithreading Integration Cluster |
-| 2896-2910 | 3 | C2 Subcomponents Catalog > Subcomponent: Live Sim Integration Cluster |
-| 2911-2919 | 3 | C2 Subcomponents Catalog > Subcomponent: Mock Spellbook Fixtures |
-| 2920-2931 | 3 | C2 Subcomponents Catalog > Subcomponent: Mock Crystallizer Harnesses |
-| 2932-3297 | 2 | Method-Level Call Flows (C1) |
-| 2934-2939 | 3 | Method-Level Call Flows (C1) > Flow: Pytest Bootstrap |
-| 2940-2957 | 3 | Method-Level Call Flows (C1) > Flow: Singleton Reset And Re-Boot |
-| 2958-2965 | 3 | Method-Level Call Flows (C1) > Flow: Viewer Matrix Fixture Build |
-| 2966-2972 | 3 | Method-Level Call Flows (C1) > Flow: Static Rift JSON Bench |
-| 2973-2979 | 3 | Method-Level Call Flows (C1) > Flow: Capability Rift JSON Bench |
-| 2980-2993 | 3 | Method-Level Call Flows (C1) > Flow: CI Runtime Qualification |
-| 2994-3018 | 3 | Method-Level Call Flows (C1) > Flow: Candidate Provenance Check End To End |
-| 3019-3045 | 3 | Method-Level Call Flows (C1) > Flow: Release Provenance Check End To End |
-| 3046-3061 | 3 | Method-Level Call Flows (C1) > Flow: Concurrent-Writer Stand-In |
-| 3062-3073 | 3 | Method-Level Call Flows (C1) > Flow: FrameLink Cleanup Guard Stand-In |
-| 3074-3100 | 3 | Method-Level Call Flows (C1) > Flow: FrameLink Lifecycle Race Stand-Ins |
-| 3101-3130 | 3 | Method-Level Call Flows (C1) > Flow: Rift Attach And Refresh Race Stand-Ins |
-| 3131-3184 | 3 | Method-Level Call Flows (C1) > Flow: Rift Agents And Teardown Handshakes |
-| 3185-3220 | 3 | Method-Level Call Flows (C1) > Flow: Rift Gate Drain Handshakes |
-| 3221-3245 | 3 | Method-Level Call Flows (C1) > Flow: Cleanup Recheck Handshake |
-| 3246-3266 | 3 | Method-Level Call Flows (C1) > Flow: Managed Pool Stress Under Eight Threads |
-| 3267-3275 | 3 | Method-Level Call Flows (C1) > Flow: Cached Terminal State Round Trip |
-| 3276-3297 | 3 | Method-Level Call Flows (C1) > Flow: One Active Spell Per Address World |
-| 3298-5463 | 2 | C1 Code Map (Core) |
-| 5464-5514 | 2 | Diagrams |
-| 5465-5491 | 3 | Diagrams > ASCII Component Diagram (C3/C2) |
-| 5492-5514 | 3 | Diagrams > Mermaid Component Diagram (C3/C2) |
-| 5515-5805 | 2 | Information Sources |
-| 5806-5815 | 2 | Open Questions |
-| 5816-6478 | 2 | Context / Handoff Summary |
+| 2035-2259 | 3 | C2 Subcomponents Catalog > Subcomponent: Aether Component Cluster |
+| 2260-2272 | 3 | C2 Subcomponents Catalog > Subcomponent: Crystallizer Component Cluster |
+| 2273-2283 | 3 | C2 Subcomponents Catalog > Subcomponent: MutationResearch Component Cluster |
+| 2284-2383 | 3 | C2 Subcomponents Catalog > Subcomponent: Spellbook Runtime And Binding Component Cluster |
+| 2384-2407 | 3 | C2 Subcomponents Catalog > Subcomponent: Spellbook Compiler Component Cluster |
+| 2408-2423 | 3 | C2 Subcomponents Catalog > Subcomponent: Utilities Component Cluster |
+| 2424-2512 | 3 | C2 Subcomponents Catalog > Subcomponent: Aether Integration Cluster |
+| 2513-2574 | 3 | C2 Subcomponents Catalog > Subcomponent: Crystallizer Integration Cluster |
+| 2575-2591 | 3 | C2 Subcomponents Catalog > Subcomponent: MutationResearch Integration Cluster |
+| 2592-2755 | 3 | C2 Subcomponents Catalog > Subcomponent: Spellbook Integration Cluster |
+| 2756-2875 | 3 | C2 Subcomponents Catalog > Subcomponent: Conduit Integration Cluster |
+| 2876-2904 | 3 | C2 Subcomponents Catalog > Subcomponent: Multithreading Integration Cluster |
+| 2905-2919 | 3 | C2 Subcomponents Catalog > Subcomponent: Live Sim Integration Cluster |
+| 2920-2928 | 3 | C2 Subcomponents Catalog > Subcomponent: Mock Spellbook Fixtures |
+| 2929-2940 | 3 | C2 Subcomponents Catalog > Subcomponent: Mock Crystallizer Harnesses |
+| 2941-3306 | 2 | Method-Level Call Flows (C1) |
+| 2943-2948 | 3 | Method-Level Call Flows (C1) > Flow: Pytest Bootstrap |
+| 2949-2966 | 3 | Method-Level Call Flows (C1) > Flow: Singleton Reset And Re-Boot |
+| 2967-2974 | 3 | Method-Level Call Flows (C1) > Flow: Viewer Matrix Fixture Build |
+| 2975-2981 | 3 | Method-Level Call Flows (C1) > Flow: Static Rift JSON Bench |
+| 2982-2988 | 3 | Method-Level Call Flows (C1) > Flow: Capability Rift JSON Bench |
+| 2989-3002 | 3 | Method-Level Call Flows (C1) > Flow: CI Runtime Qualification |
+| 3003-3027 | 3 | Method-Level Call Flows (C1) > Flow: Candidate Provenance Check End To End |
+| 3028-3054 | 3 | Method-Level Call Flows (C1) > Flow: Release Provenance Check End To End |
+| 3055-3070 | 3 | Method-Level Call Flows (C1) > Flow: Concurrent-Writer Stand-In |
+| 3071-3082 | 3 | Method-Level Call Flows (C1) > Flow: FrameLink Cleanup Guard Stand-In |
+| 3083-3109 | 3 | Method-Level Call Flows (C1) > Flow: FrameLink Lifecycle Race Stand-Ins |
+| 3110-3139 | 3 | Method-Level Call Flows (C1) > Flow: Rift Attach And Refresh Race Stand-Ins |
+| 3140-3193 | 3 | Method-Level Call Flows (C1) > Flow: Rift Agents And Teardown Handshakes |
+| 3194-3229 | 3 | Method-Level Call Flows (C1) > Flow: Rift Gate Drain Handshakes |
+| 3230-3254 | 3 | Method-Level Call Flows (C1) > Flow: Cleanup Recheck Handshake |
+| 3255-3275 | 3 | Method-Level Call Flows (C1) > Flow: Managed Pool Stress Under Eight Threads |
+| 3276-3284 | 3 | Method-Level Call Flows (C1) > Flow: Cached Terminal State Round Trip |
+| 3285-3306 | 3 | Method-Level Call Flows (C1) > Flow: One Active Spell Per Address World |
+| 3307-5480 | 2 | C1 Code Map (Core) |
+| 5481-5531 | 2 | Diagrams |
+| 5482-5508 | 3 | Diagrams > ASCII Component Diagram (C3/C2) |
+| 5509-5531 | 3 | Diagrams > Mermaid Component Diagram (C3/C2) |
+| 5532-5822 | 2 | Information Sources |
+| 5823-5832 | 2 | Open Questions |
+| 5833-6500 | 2 | Context / Handoff Summary |

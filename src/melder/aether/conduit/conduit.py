@@ -4915,6 +4915,7 @@ class Conduit(Cleanable):
             spellframe: str | object | None = None,
             binding_name: str | None = None,
             override: Optional[dict | list | tuple] = None,
+            spell_index_id: Optional[str] = None,
     ) -> Optional[Any]:
         """
         Public API
@@ -4927,6 +4928,8 @@ class Conduit(Cleanable):
         - `spell` as a **string** (treated as a human SpellName), or
         - `spell` as a **spell object** (class/function/Protocol), or
         - `spell_id` as the canonical machine identity, or
+        - `spell_index_id` as a SpellIndex's id, naming the version the
+          index has active, or
         - `spellframe` as a **frame/protocol** (or string frame key), or
         - an explicit spellframe/binding address.
 
@@ -4981,6 +4984,20 @@ class Conduit(Cleanable):
               other is refusal.
             - Resolution, reuse and lifetime are delegated to the Meld runtime and
               governed by the spell's `Existence`, not by this call.
+            - BY INDEX ID (2026-11-28, TASK-2026-11-28-meld_by_spell_index_id,
+              GitHub #346): `spell_index_id=` names a SpellIndex - one this
+              conduit's Spellbook owns with an active version, or borrows through
+              an index link - and the Spellbook answers it with the spell_id of
+              the version the index has active; the meld then runs as
+              `meld(spell_id=<that id>, override=...)`, so its results, errors,
+              lifetimes and hooks are the id form's and it follows a notch. In
+              dynamic mode the creation-gate ticket is held from before that read
+              until the meld returns, so a notch cannot move the index between
+              them. A call without `spell_index_id` runs the code it ran before,
+              but the keyword costs every call its default: about 6 to 11 ns a
+              warm automatic meld, measured (the SPEED NOTE at the entry test,
+              which also records the `specialized_meld` split that would win it
+              back).
 
         Args:
             spell:
@@ -4989,6 +5006,11 @@ class Conduit(Cleanable):
             spell_id:
                 Optional canonical SHA256 machine identity. Mutually exclusive
                 with `spell` and delegated directly to the internal ID lane.
+            spell_index_id:
+                Optional SpellIndex id (its ULID) naming the version the index
+                has active. Takes no other selector (`spell`, `spell_id`,
+                `spellframe`, `binding_name`); `override` applies as for an id
+                meld.
             spellframe:
                 Optional spellframe / protocol / string frame key used for
                 resolution. If provided, it becomes the primary frame key.
@@ -5012,12 +5034,17 @@ class Conduit(Cleanable):
             ValueError:
                 - If none of `spell`, `spell_id`, or `spellframe` are provided.
                 - If both `spell` and `spell_id` are provided.
+                - If `spell_index_id` is given with another selector.
             TypeError:
                 - If `spell_id` is not a string when provided.
+                - If `spell_index_id` is not a string when provided.
                 - If `binding_name` is not a string when provided.
             KeyError:
                 Propagated from Meld.meld when a spell_id cannot be
-                resolved.
+                resolved - its text names the version's SpellIndex when the id
+                is a parked version - and from the Spellbook when no index it
+                owns with an active version, or borrows, has the
+                `spell_index_id`.
             NotImplementedError:
                 Propagated from Meld.meld for spell types or
                 existence modes not yet implemented.
@@ -5026,6 +5053,21 @@ class Conduit(Cleanable):
         """
         if self._cleaned:
             self.check_cleaned()
+        # A meld by index id (#346) resolves the index to its active spell_id and melds that in an id lane.
+        # SPEED NOTE (2026-11-28; 3.14t, the GIL off; the owner accepted the cost): the keyword is not free for the
+        # calls that leave it out. CPython fills every keyword-only parameter a call omits from `__kwdefaults__` by a
+        # dict lookup, so adding `spell_index_id` made each warm automatic meld 6 to 11 ns slower - an A/B against
+        # 0.2.8316, five alternating rounds, medians: `meld(spell_id=)` 252.9 -> 262.9 ns, `meld(Cls)` 239.2 ->
+        # 249.9, `meld('Name')` 239.3 -> 248.5, a `many` by id 292.2 -> 298.4 - while dynamic melds stayed within
+        # the run-to-run spread. To win it back and more, the machine identities `spell_id` and `spell_index_id`
+        # could move out of `meld` into a `specialized_meld(*, spell_id=None, spell_index_id=None, override=None)`,
+        # leaving `meld` with `spell`, `spellframe`, `binding_name` and `override`: on bare functions of those shapes
+        # the split saved 10 to 16 ns a name or class call and 8 to 14 ns an id call, an estimated 12 to 22 ns in
+        # the doors (twice the one keyword's measured cost). It changes the id form's call shape - `meld(spell_id=)`
+        # is the machine path the docs and tests use - so it waits for the owner's word. `SpellSpace.meld` carries
+        # the same keyword and the same cost.
+        if spell_index_id is not None:
+            return self._meld_by_spell_index_id(spell_index_id, spell, spell_id, spellframe, binding_name, override)
 
         meld_component = self._meld
         # Warm automatic lanes (id lane 2026-09-26, name/class lane 2026-09-27): on an automatic
@@ -5135,6 +5177,76 @@ class Conduit(Cleanable):
             spell_override=override,
         )
 
+    def _meld_by_spell_index_id(
+            self,
+            spell_index_id: object,
+            spell: Optional[object],
+            spell_id: Optional[str],
+            spellframe: Optional[object],
+            binding_name: Optional[str],
+            override: Optional[Union[dict, list, tuple]],
+    ) -> Optional[Any]:
+        """
+        Internal
+
+        Meld the version a SpellIndex has active, named by the index's id: `meld(spell_index_id=...)`.
+
+        Purpose:
+            The cold half of the index form (TASK-2026-11-28-meld_by_spell_index_id, GitHub #346), kept out of
+            `meld` so its warm lanes carry only the keyword and its entry test (their measured cost is the SPEED
+            NOTE in `meld`). The conduit's Spellbook answers the index id
+            with the spell_id of the version the index has active (`Spellbook._selected_spell_id_for_index_id`),
+            and the meld continues as a meld of that spell_id.
+
+        Contract:
+            - Refuses a call that gives `spell`, `spell_id`, `spellframe` or `binding_name` beside the index id
+              (ValueError), or a non-str id (TypeError), before anything is read
+              (`Meld._check_spell_index_id_call`).
+            - Automatic conduit: reads the spell_id, then `meld(spell_id=..., override=...)` - the warm id lane,
+              and on a miss the door's id lane.
+            - Dynamic conduit: takes the creation-gate ticket before the read and holds it until the door's id
+              lane returns, as a name meld holds it across its resolution; the id lane is called directly, since
+              re-entering `meld` would take a second ticket.
+            - Results, errors, lifetimes and hooks are the id lane's.
+
+        Args:
+            spell_index_id: The SpellIndex id (its ULID).
+            spell: The `spell` the caller passed; refused unless None.
+            spell_id: The `spell_id` the caller passed; refused unless None.
+            spellframe: The `spellframe` the caller passed; refused unless None.
+            binding_name: The `binding_name` the caller passed; refused unless None.
+            override: Optional override payload, applied as for an id meld.
+
+        Returns:
+            Any: What a meld of the index's active spell_id returns.
+
+        Raises:
+            ValueError: If another selector is given with `spell_index_id`.
+            TypeError: If `spell_index_id` is not a string.
+            KeyError: If the Spellbook answers no index of that id; the id lane's KeyError otherwise.
+            RuntimeError: If the creation gate is closed (dynamic); anything the id lane raises.
+
+        Threading:
+            Dynamic: one creation-gate ticket from before the read until the id lane returns - a notch drains the
+            gate before it parks and promotes, so it cannot move the index between the read and the meld; the gate
+            parks this call through a freeze and raises once closed. Automatic: no gate, as every automatic meld.
+            The Spellbook's read takes no lock.
+        """
+        meld_component = self._meld
+        meld_component._check_spell_index_id_call("meld", spell_index_id, spell, spell_id, spellframe, binding_name)
+        if self.__dynamic_environment__:
+            creation_gate = self._creation_gate
+            creation_gate.admit_ticket()
+            try:
+                selected_spell_id = meld_component._spellbook._selected_spell_id_for_index_id(spell_index_id)
+                if override is None:
+                    return meld_component.meld(selected_spell_id)
+                return meld_component.meld(selected_spell_id, spell_override=override)
+            finally:
+                creation_gate.unregister_ticket()
+        selected_spell_id = meld_component._spellbook._selected_spell_id_for_index_id(spell_index_id)
+        return self.meld(spell_id=selected_spell_id, override=override)
+
     # Machine identity remains explicit at the public boundary via `spell_id=`;
     # this facade forwards it positionally into the internal ID fast lane.
 
@@ -5146,6 +5258,7 @@ class Conduit(Cleanable):
             spellframe: Optional[Union[str, object]] = None,
             binding_name: Optional[str] = None,
             override: Optional[Union[dict, list, tuple]] = None,
+            spell_index_id: Optional[str] = None,
     ) -> ManagedSpellLease[Any]:
         """
         Public API
@@ -5161,9 +5274,10 @@ class Conduit(Cleanable):
 
         Contract:
             - Takes `meld`'s inputs - a SpellName string, a class, `spell_id=`,
-              or a spellframe/binding address - and resolves the target as
-              `meld` does. A target of any other existence is refused before
-              anything is melded or leased.
+              `spell_index_id=`, or a spellframe/binding address - and resolves
+              the target as `meld` does: an index id names the version the index
+              has active, through this conduit's Spellbook (#346). A target of
+              any other existence is refused before anything is melded or leased.
             - The pool is the resolved version's pool in its owner root's store,
               read before the meld; a version with no owner store, or a store
               without that pool, is refused with the missing-pool error.
@@ -5190,6 +5304,9 @@ class Conduit(Cleanable):
                 Optional binding name used for resolution.
             override:
                 Optional override payload passed to the meld.
+            spell_index_id:
+                Optional SpellIndex id naming the version the index has active;
+                takes no other selector.
 
         Returns:
             ManagedSpellLease:
@@ -5197,12 +5314,14 @@ class Conduit(Cleanable):
 
         Raises:
             ValueError:
-                When both `spell` and `spell_id` are given, no identity is
-                given, or the target is not `Existence.managed_spell_quantity`.
+                When both `spell` and `spell_id` are given, `spell_index_id` is
+                given with another selector, no identity is given, or the target
+                is not `Existence.managed_spell_quantity`.
             TypeError:
-                When `spell_id` is not a string.
+                When `spell_id` or `spell_index_id` is not a string.
             KeyError:
-                When no spell resolves.
+                When no spell resolves, or no index of the Spellbook has the
+                `spell_index_id`.
             MeldExecutionError:
                 When the version has no pool to lease from; the pool's
                 ManagedSpellExhaustedError (limited_quantity at its limit, queue
@@ -5213,6 +5332,12 @@ class Conduit(Cleanable):
         """
         if self._cleaned:
             self.check_cleaned()
+        if spell_index_id is not None:
+            # By index id (#346): the Spellbook answers the index's active spell_id, which resolves as a spell_id.
+            self._meld._check_spell_index_id_call(
+                "managed_spell_meld", spell_index_id, spell, spell_id, spellframe, binding_name
+            )
+            spell_id = self._meld._spellbook._selected_spell_id_for_index_id(spell_index_id)
         if spell is not None and spell_id is not None:
             raise ValueError("managed_spell_meld accepts either `spell` or `spell_id`, not both.")
         if spell_id is not None and type(spell_id) is not str:

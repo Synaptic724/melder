@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/conduit/conduit_ward/transfer/transfer_of_ownership.py",
- "source_sha256": "c2c3fe835b2821e2c4cdfded2cdac43364456f2637b916528e6b89a8f584c60d",
+ "source_sha256": "6de6dccbdb595d40c545bce81fca1de78daa66a4edcd750ae5ae53e25596dbb8",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.conduit.conduit_ward.transfer.transfer_of_ownership": {
@@ -41,7 +41,7 @@
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "f6be43a3022a64702a64fd705456201e2fc1452677da75b9b8966455dd7a7773",
+   "span_sha256": "cf3f733469ddb543bf2f294901ed8c23b6e15a83c93747eac33ccae31f791a5c",
    "role": "Control-plane helper that migrates a spell lineage between conduit owners.",
    "responsibilities": [
     "preflights and executes dynamic spell ownership transfer between conduits",
@@ -51,7 +51,8 @@
     "moves the source root store's entries of every index member to the target's store when move_creations is True (the public verbs' default since 0.2.8239; a holder's row carries the holder alone since 0.2.8267 - the many objects built for it stay in the store that recorded them) or takes the active member's out when False; disposes nothing, and hands over stewardship, not a working setup",
     "makes the owner stamp follow the lineage both ways (0.2.8246): the flip and _migrate_inactive_members stamp every member that carries a stamp onto the target through _restamp, which registers the stamp-back to the source first and, for a managed version whose pool the target store did not hold, the discard of the pool its stamp composed (_discard_composed_pool); a managed version's pool moves as a store row with its idle objects and count",
     "moves a parked member that carries no owner stamp unstamped; since 0.2.8248 conjure stamps the versions staged before it, so that is only a member whose stamp raised at conjure (logged)",
-    "resolves a spell_id in two explicit steps - the spell that owns it, then the spell its index has active in the source Book (in the member's own Book for the target-side dependency check) - for its own spell handle (_resolve_spell, RuntimeError when that index has no active spell), the target-side dependency check (_deps_resolvable_on_target) and the owned-dependency sub-transfers (_transfer_owned_dependencies), so a parked Spell object never reaches a transfer (0.2.8253)"
+    "resolves a spell_id in two explicit steps - the spell that owns it, then the spell its index has active in the source Book (in the member's own Book for the target-side dependency check) - for its own spell handle (_resolve_spell, RuntimeError when that index has no active spell), the target-side dependency check (_deps_resolvable_on_target) and the owned-dependency sub-transfers (_transfer_owned_dependencies), so a parked Spell object never reaches a transfer (0.2.8253)",
+    "keeps both Books' _spell_indexes_by_id beside their _spells in the flip and its rollback, under both Books' locks, so a meld by index id finds the index on its owner (#346, 0.2.8317)"
    ],
    "owns_state": [
     "source_conduit",

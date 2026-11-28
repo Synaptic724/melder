@@ -2212,6 +2212,68 @@ class Meld(Cleanable, ABC):
 
     # Resolution helpers
     # ----------------------------------------------------------------------
+    @staticmethod
+    def _check_spell_index_id_call(
+            verb: str,
+            spell_index_id: object,
+            spell: Optional[object],
+            spell_id: Optional[str],
+            spellframe: Optional[object],
+            binding_name: Optional[str],
+    ) -> None:
+        """
+        Internal
+
+        Refuse a meld call that names its target by `spell_index_id` the wrong way.
+
+        Purpose:
+            The one argument check of the three doors that take `spell_index_id=` - `Conduit.meld`,
+            `SpellSpace.meld` and `Conduit.managed_spell_meld` (TASK-2026-11-28-meld_by_spell_index_id, GitHub
+            #346) - run before anything is read.
+
+        Contract:
+            - An index id names its target on its own: any of `spell`, `spell_id`, `spellframe` and
+              `binding_name` given beside it is refused with ValueError naming them.
+            - A non-str id is refused with TypeError naming its type.
+            - Pure check: reads nothing else and mutates nothing.
+
+        Args:
+            verb: The door's name, for the messages ("meld", "managed_spell_meld").
+            spell_index_id: The index id the caller passed (not None).
+            spell: The `spell` the caller passed.
+            spell_id: The `spell_id` the caller passed.
+            spellframe: The `spellframe` the caller passed.
+            binding_name: The `binding_name` the caller passed.
+
+        Returns:
+            None.
+
+        Raises:
+            ValueError: If another selector is given with `spell_index_id`.
+            TypeError: If `spell_index_id` is not a string.
+        """
+        if spell is None and spell_id is None and spellframe is None and binding_name is None:
+            # The well-formed call returns here without building anything; only a refusal composes its message.
+            if type(spell_index_id) is str:
+                return
+            raise TypeError(f"{verb} `spell_index_id` must be a string; got {type(spell_index_id).__name__}.")
+        others = [
+            name
+            for name, value in (
+                ("spell", spell),
+                ("spell_id", spell_id),
+                ("spellframe", spellframe),
+                ("binding_name", binding_name),
+            )
+            if value is not None
+        ]
+        given = ", ".join(f"`{name}`" for name in others)
+        raise ValueError(
+            f"{verb} accepts `spell_index_id` alone, but {given} {'was' if len(others) == 1 else 'were'} also given. "
+            "An index id names the index whose active version is melded, so pass it without another selector, or "
+            "leave it out and name the target the other way."
+        )
+
     def _resolve_spell(
             self,
             *,
@@ -2331,7 +2393,80 @@ class Meld(Cleanable, ABC):
             if spell_id in spell_map:
                 return spell_map[spell_id]
 
-        raise KeyError(f"[MELD] No spell found with spell_id: {spell_id}")
+        raise self._missing_spell_id_error(spell_id)
+
+    def _missing_spell_id_error(self, spell_id: str) -> KeyError:
+        """
+        Internal
+
+        Build the KeyError a meld door raises for a spell_id no active version carries.
+
+        Purpose:
+            A spell_id names one version (owner ruling, 2026-10-17), and a meld builds only an active one, so a
+            meld of a version a notch parked misses. The miss says so when it is that case, and names the
+            version's SpellIndex and the meld that reaches the version the index has active
+            (TASK-2026-11-28-meld_by_spell_index_id, GitHub #346).
+
+        Contract:
+            - The text opens "[MELD] No spell found with spell_id: <id>", as it always has.
+            - When the id is a version this door's Book can see parked - its own (`_inactive_spells`) or a borrowed
+              copy (`_inactive_contracted_spells`) - one sentence follows: "'<Name>' (spell_id <id>) is a parked
+              version of SpellIndex <index id>, and a meld builds only an active version." and the remedy - meld
+              `spell_index_id='<index id>'` when the index has an active version this Book can meld (its own, or
+              borrowed through an index link), notch the version active (its own; the only remedy when its index
+              has no active version), or wait for the lender's notch back (a granted version).
+            - Returns the error; the caller raises it. Mutates nothing.
+
+        Args:
+            spell_id: The spell_id the active reads missed.
+
+        Returns:
+            KeyError: The error to raise.
+
+        Threading:
+            Runs only after the active reads missed, and takes no Book lock: one `dict.get` on the Book's parked
+            map, a one-call snapshot of its parked borrowed maps, and the parked version's index read under that
+            version's own lock (`Spell._spell_index_unless_cleaned`), so no lock edge is added on a path that may
+            hold a conduit's or an index's ticket.
+        """
+        missing = f"[MELD] No spell found with spell_id: {spell_id}"
+        spellbook = self._spellbook
+        parked = spellbook._inactive_spells.get(spell_id)
+        borrowed = False
+        if parked is None:
+            for parked_copies in list(spellbook._inactive_contracted_spells.values()):
+                parked = parked_copies.get(spell_id)
+                if parked is not None:
+                    borrowed = True
+                    break
+        if parked is None:
+            return KeyError(missing)
+        spell_index = parked._spell_index_unless_cleaned()
+        if spell_index is None:
+            return KeyError(missing)
+        index_id = spell_index.id
+        if not borrowed:
+            if index_id in spellbook._spell_indexes_by_id:
+                remedy = (
+                    f"Meld spell_index_id='{index_id}' for the version that index has active, or notch this one "
+                    "active first."
+                )
+            else:
+                remedy = "That index has no active version: notch this one active first."
+        elif index_id in spellbook._contracted_indexes:
+            remedy = (
+                f"Meld spell_index_id='{index_id}' for the version that index has active; only the index's lender "
+                "can notch this one active."
+            )
+        else:
+            remedy = (
+                "Its lender granted this version, not its index, so it is melded here again once the lender notches "
+                "back to it."
+            )
+        return KeyError(
+            f"{missing}. '{parked.spell_name}' (spell_id {spell_id}) is a parked version of SpellIndex {index_id}, "
+            f"and a meld builds only an active version. {remedy}"
+        )
 
     def _resolve_visible_version_by_id(self, spell_id: str) -> Spell:
         """

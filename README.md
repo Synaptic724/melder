@@ -92,7 +92,9 @@ on `md.*` — a deep import path is not needed for this workflow.
 
 Pass the Python class or callable to `bind`; resolve it by its quoted registered
 name with `meld("Greeter")`. The tutorials use this name-based lookup throughout.
-Keep opaque machine identities explicit with `meld(spell_id=...)`.
+Keep opaque machine identities explicit with `meld(spell_id=...)`, which names one
+version, or `meld(spell_index_id=...)`, which names a spell index and builds
+whichever version it has active.
 
 ---
 
@@ -1449,9 +1451,10 @@ conduit.notch_spell(spell_index=index, spell_id=id_v2)
 assert index.selected_spell_id == id_v2
 
 # 3. MELD — the very next resolution builds the NEW version, and the
-#    address follows the notch: a meld by name gets it too.
+#    address follows the notch: a meld by name, or by the index's id, gets it too.
 service = conduit.meld(spell_id=id_v2)   # → the edited ReportService
 assert conduit.meld("ReportService") is service
+assert conduit.meld(spell_index_id=index.id) is service
 ```
 
 **Every version of an index is bound the way its first version was** — the

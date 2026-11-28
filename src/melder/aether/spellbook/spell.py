@@ -988,10 +988,13 @@ class Spell(Cleanable):
             contract dependency walks), and the root's teardown, which
             unregisters each parked version's index from the frame
             (`Spellbook._unregister_conduit_spells_from_aether`,
-            minted_index_registry, 0.2.8259), and the notch seam's check of
+            minted_index_registry, 0.2.8259), the notch seam's check of
             its incoming version (`Spellbook._refuse_unparked_incoming`,
-            0.2.8285). Until 0.2.8253 its first reader was the parked branch
-            of `Spellbook.find_spell_by_id`.
+            0.2.8285), and the error paths of a meld that names a parked
+            version (`Meld._missing_spell_id_error`) or an index holding only
+            parked versions (`Spellbook._unknown_spell_index_id_error`, #346).
+            Until 0.2.8253 its first reader was the parked branch of
+            `Spellbook.find_spell_by_id`.
 
         Contract:
             - Returns the index the spell belongs to while the spell is live, and

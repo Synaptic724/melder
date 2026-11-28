@@ -96,8 +96,9 @@ mode at its limit.
 - Constructor injection leases too. Annotate a parameter with the managed class: every
   injected parameter is its own lease, so two consumers hold two objects.
 - `conduit.managed_spell_meld(DatabaseConnection)` melds the spell and returns a
-  `md.ManagedSpellLease` whose `with` block gives the object back. It refuses a spell
-  that is not managed with `ValueError`, before melding anything.
+  `md.ManagedSpellLease` whose `with` block gives the object back. It takes `meld`'s
+  forms - the class, a quoted name, `spell_id=` or `spell_index_id=` - and refuses a
+  spell that is not managed with `ValueError`, before melding anything.
 
 ## Give objects back
 

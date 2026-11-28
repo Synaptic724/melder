@@ -1,7 +1,7 @@
 GENERATED REPOSITORY ASSET - DO NOT EDIT MANUALLY.
 AUTHORITY: Use context_compass/AGENTS.MD and ContextCompass first.
 CORPUS: other
-SOURCE FINGERPRINT: 206797ab21a18544956eb942f937c4cdaca2b7fd2c8bc859e0495d2a1ece3916
+SOURCE FINGERPRINT: d861230b278606f58e999fbb33944a696ae42db3d1e2ca2baee363dee79d359e
 FILE COUNT: 421
 
 ================================================================================
@@ -8354,7 +8354,7 @@ END FILE: NOTICE
 ================================================================================
 ================================================================================
 BEGIN FILE: README.md
-CONTENT SHA256: b4ebd06b8b4bc50ef396f88b7bfef9216144b9744703e8fc9156e9e092f2a386
+CONTENT SHA256: 9f52e07fdae7e8cd2f595c44d7ddb638f9a30d86c4455dd266683514cbc81fe1
 SOURCE ENCODING: utf-8
 ================================================================================
 <div align="center">
@@ -8451,7 +8451,9 @@ on `md.*` — a deep import path is not needed for this workflow.
 
 Pass the Python class or callable to `bind`; resolve it by its quoted registered
 name with `meld("Greeter")`. The tutorials use this name-based lookup throughout.
-Keep opaque machine identities explicit with `meld(spell_id=...)`.
+Keep opaque machine identities explicit with `meld(spell_id=...)`, which names one
+version, or `meld(spell_index_id=...)`, which names a spell index and builds
+whichever version it has active.
 
 ---
 
@@ -9808,9 +9810,10 @@ conduit.notch_spell(spell_index=index, spell_id=id_v2)
 assert index.selected_spell_id == id_v2
 
 # 3. MELD — the very next resolution builds the NEW version, and the
-#    address follows the notch: a meld by name gets it too.
+#    address follows the notch: a meld by name, or by the index's id, gets it too.
 service = conduit.meld(spell_id=id_v2)   # → the edited ReportService
 assert conduit.meld("ReportService") is service
+assert conduit.meld(spell_index_id=index.id) is service
 ```
 
 **Every version of an index is bound the way its first version was** — the
@@ -11070,7 +11073,7 @@ END FILE: UX_and_AIX_experiences/01_beginner/25_frames_as_dict_classification.py
 ================================================================================
 ================================================================================
 BEGIN FILE: UX_and_AIX_experiences/01_beginner/26_meld_address_forms.py
-CONTENT SHA256: 5baabfaa5b31da865eb4a690e161b438a5c4f2ceb8abb47e5e9935c8a41da568
+CONTENT SHA256: d274348aafea88ef1153af98d4f33319842165e5e4397e95c0a54205d1f75328
 SOURCE ENCODING: utf-8
 ================================================================================
 """
@@ -11079,10 +11082,13 @@ GOAL: THE ADDRESS LAW (run-proven + doc-canon): every spell lives at
       one (frame_key, binding_key) address - frame_key is your spellframe,
       or the spell's normalized name if you gave none; binding_key is
       your binding_name, or the default slot. Human callers use a quoted
-      spell name; machine callers use an explicit spell_id. A categorized
-      registration also has a complete (spellframe, binding_name) address.
-      A name alone does not supply a custom spellframe.
+      spell name; machine callers use an explicit spell_id, or a
+      spell_index_id for whichever version a spell index has active. A
+      categorized registration also has a complete (spellframe,
+      binding_name) address. A name alone does not supply a custom
+      spellframe.
 SURFACE EXERCISED: meld("SpellName"), meld(spell_id=...),
+                   meld(spell_index_id=...),
                    meld(spellframe=..., binding_name=...)
 """
 import melder as md
@@ -11111,6 +11117,13 @@ def main() -> None:
     by_id = conduit.meld(spell_id=spell_id)
     assert by_name is by_id
     print("quoted name and explicit ID resolve the same spell:", by_name.total())
+
+    # Index form: a spell index id names whichever version that index has
+    # active, so it follows a notch; a spell_id names one version.
+    index_id = conduit.get_spell_by_spell_id(spell_id).spell_index.id
+    by_index = conduit.meld(spell_index_id=index_id)
+    assert by_index is by_id
+    print("the index id resolves the version its index has active:", by_index.total())
 
     ledger = conduit.meld(spellframe="finance", binding_name="ledger")
     assert isinstance(ledger, LedgerService)
@@ -73131,7 +73144,7 @@ END FILE: docs/expert/external-storage.md
 ================================================================================
 ================================================================================
 BEGIN FILE: docs/expert/governed-change.md
-CONTENT SHA256: 681c97b05bbc20ad134e78dcae3f2ce44c14fda7c7e9896c5286fec209039ecb
+CONTENT SHA256: f367df8eb467a8301288b39c23f39e32d19e9ded6bffcaaa689b12587b585f79
 SOURCE ENCODING: utf-8
 ================================================================================
 # Preview, stage, and govern structural change
@@ -73169,7 +73182,9 @@ candidate becomes the selected member and the next meld builds it, and a notch b
 the previous spell_id restores the old version, which stayed parked. Expert 17 runs the
 whole loop on public calls, as does the README's sketch. A lookup by spell_id is exact:
 `get_spell_by_spell_id` returns the version that spell_id names, parked or active, and the
-version an index has active is a lookup by the index, `get_spell_by_index_id`.
+version an index has active is a lookup by the index, `get_spell_by_index_id`, or a meld by
+it, `meld(spell_index_id=...)`, which follows every notch. A meld of a parked version's
+spell_id is refused with a KeyError that names the version's index and that meld.
 The calls that build nothing follow the same rule: `has_live_creation(spell=...)`,
 `describe_live_creation_status(spell=...)` and `purge(spell_id=...)` given a spell_id
 answer for that version, parked or active, so a parked version's objects can be
@@ -73928,7 +73943,7 @@ END FILE: docs/intermediate/index.md
 ================================================================================
 ================================================================================
 BEGIN FILE: docs/intermediate/managed-spells.md
-CONTENT SHA256: 856dc010f4c95554fabfc838f7645bbd12637eecf69ac4a34cd8f5ef64a4fe9a
+CONTENT SHA256: 953a469a5965ca8602b6f8b888b22708ea482c469b45fb84a17faf77d0efa312
 SOURCE ENCODING: utf-8
 ================================================================================
 ---
@@ -74029,8 +74044,9 @@ mode at its limit.
 - Constructor injection leases too. Annotate a parameter with the managed class: every
   injected parameter is its own lease, so two consumers hold two objects.
 - `conduit.managed_spell_meld(DatabaseConnection)` melds the spell and returns a
-  `md.ManagedSpellLease` whose `with` block gives the object back. It refuses a spell
-  that is not managed with `ValueError`, before melding anything.
+  `md.ManagedSpellLease` whose `with` block gives the object back. It takes `meld`'s
+  forms - the class, a quoted name, `spell_id=` or `spell_index_id=` - and refuses a
+  spell that is not managed with `ValueError`, before melding anything.
 
 ## Give objects back
 
@@ -81702,10 +81718,10 @@ END FILE: release_docs/0.2.8310.md
 ================================================================================
 ================================================================================
 BEGIN FILE: release_docs/next_version_release.md
-CONTENT SHA256: 8a2d46e35dcdba8e3284bc6b7cbe0be7a4ecff9c5494aa8f441eda169bdb49db
+CONTENT SHA256: 7e74aeadcaa63c45429b95b76ba10394379e636dd7287f70a42364216949b3d1
 SOURCE ENCODING: utf-8
 ================================================================================
-# Melder 0.2.8316
+# Melder 0.2.8317
 
 **Unreleased**
 
@@ -81833,6 +81849,49 @@ still registered and refused at its meld, with or without an override.
 Unchanged: binds before `conjure`, which compile at `conjure`; a late bind that commits; a window whose body raises,
 which keeps what it bound; and every meld while no late bind is open in the frame, which pays one map read.
 
+## A meld can name a spell index by its id
+
+`Conduit.meld`, `SpellSpace.meld` and `Conduit.managed_spell_meld` take `spell_index_id=` beside `spell_id=` (GitHub
+issue #346). A spell_id names one version; a spell index id names the index and melds whichever version it has active,
+so one call follows every notch. The index is one the conduit's Spellbook owns, or borrows through an index link
+(`add_index_to_contract`).
+
+```python
+spell_id = book.bind(spell=ReportService, existence="unique")
+conduit = book.conjure(dynamic=True)
+index = conduit.get_spell_by_spell_id(spell_id).spell_index
+
+report = conduit.meld(spell_index_id=index.id)    # the version the index has active
+id_v2 = conduit.bind_inactive(spell=EditedReportService, spell_index=index, existence="unique")
+conduit.notch_spell(spell_index=index, spell_id=id_v2)
+edited = conduit.meld(spell_index_id=index.id)    # the edited version: the index id follows the notch
+```
+
+`spell_index_id` takes no other selector: given with `spell`, `spell_id`, `spellframe` or `binding_name` it raises
+`ValueError`, and a non-string raises `TypeError`. An id the Spellbook cannot answer raises `KeyError` "[MELD] No
+SpellIndex found with spell_index_id: <id>. ..."; an index that holds only parked versions - one
+`remove_from_spell_index` created - raises `KeyError` "[MELD] SpellIndex <id> has no active version to meld: ...",
+naming them. A version granted on its own (`add_spell_to_contract`) shares that version, not its index: meld it by its
+spell_id.
+
+A meld of a parked version's spell_id still raises `KeyError` "[MELD] No spell found with spell_id: <id>", and the text
+now says where the version is parked and how to reach the index's active version: "'<Name>' (spell_id <id>) is a
+parked version of SpellIndex <index id>, and a meld builds only an active version. Meld spell_index_id='<index id>'
+for the version that index has active, or notch this one active first." Code that matches the first words is
+unaffected.
+
+Performance: every warm meld that does not pass `spell_index_id` - by spell_id, by name or by class - is 6 to 11 ns
+slower on an automatic conduit (measured on 3.14t with the GIL off: `meld(spell_id=...)` 253 -> 263 ns), because
+Python fills one more keyword-only default on each call; dynamic melds stayed within run-to-run noise. A warm meld by
+index id costs about one id meld more (468 ns automatic).
+
+Known, and not changed here: a borrower's meld of a version its lender staged after `conjure` and has not melded yet
+raises "Cannot build CreationContext before spell_codegen_creation exists" in every form, by index id included; meld
+the version once through the lender first.
+
+Unchanged: `spell_id=` and every other form; purge, the live-creation probes and the version verbs, which take
+spell_ids.
+
 ## Packaging and documentation
 
 The codegen profile docstrings and `docs/expert/codegen.md` now state what a profile enforces on room code: its
@@ -81859,7 +81918,12 @@ unchanged). `docs/expert/transactions.md` gains a section on the undone late bin
 inside another thread's late bind. The source and test maps, their indexes and the source graph describe the change
 (GitHub issue #330).
 
-Agent documentation metadata and the whole-repository LLM bundles are rebuilt for 0.2.8316.
+The docstrings of `Conduit.meld`, `Conduit.managed_spell_meld` and `SpellSpace.meld` describe `spell_index_id=` and its
+measured cost, with a note that moving `spell_id` and `spell_index_id` into a door of their own would win the cost
+back. The README, `docs/expert/governed-change.md`, `docs/intermediate/managed-spells.md` and beginner example 26 show
+the index form. The source and test maps, their indexes and the source graph describe the change (GitHub issue #346).
+
+Agent documentation metadata and the whole-repository LLM bundles are rebuilt for 0.2.8317.
 ================================================================================
 END FILE: release_docs/next_version_release.md
 ================================================================================

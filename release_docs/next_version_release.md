@@ -1,4 +1,4 @@
-# Melder 0.2.8316
+# Melder 0.2.8317
 
 **Unreleased**
 
@@ -126,6 +126,49 @@ still registered and refused at its meld, with or without an override.
 Unchanged: binds before `conjure`, which compile at `conjure`; a late bind that commits; a window whose body raises,
 which keeps what it bound; and every meld while no late bind is open in the frame, which pays one map read.
 
+## A meld can name a spell index by its id
+
+`Conduit.meld`, `SpellSpace.meld` and `Conduit.managed_spell_meld` take `spell_index_id=` beside `spell_id=` (GitHub
+issue #346). A spell_id names one version; a spell index id names the index and melds whichever version it has active,
+so one call follows every notch. The index is one the conduit's Spellbook owns, or borrows through an index link
+(`add_index_to_contract`).
+
+```python
+spell_id = book.bind(spell=ReportService, existence="unique")
+conduit = book.conjure(dynamic=True)
+index = conduit.get_spell_by_spell_id(spell_id).spell_index
+
+report = conduit.meld(spell_index_id=index.id)    # the version the index has active
+id_v2 = conduit.bind_inactive(spell=EditedReportService, spell_index=index, existence="unique")
+conduit.notch_spell(spell_index=index, spell_id=id_v2)
+edited = conduit.meld(spell_index_id=index.id)    # the edited version: the index id follows the notch
+```
+
+`spell_index_id` takes no other selector: given with `spell`, `spell_id`, `spellframe` or `binding_name` it raises
+`ValueError`, and a non-string raises `TypeError`. An id the Spellbook cannot answer raises `KeyError` "[MELD] No
+SpellIndex found with spell_index_id: <id>. ..."; an index that holds only parked versions - one
+`remove_from_spell_index` created - raises `KeyError` "[MELD] SpellIndex <id> has no active version to meld: ...",
+naming them. A version granted on its own (`add_spell_to_contract`) shares that version, not its index: meld it by its
+spell_id.
+
+A meld of a parked version's spell_id still raises `KeyError` "[MELD] No spell found with spell_id: <id>", and the text
+now says where the version is parked and how to reach the index's active version: "'<Name>' (spell_id <id>) is a
+parked version of SpellIndex <index id>, and a meld builds only an active version. Meld spell_index_id='<index id>'
+for the version that index has active, or notch this one active first." Code that matches the first words is
+unaffected.
+
+Performance: every warm meld that does not pass `spell_index_id` - by spell_id, by name or by class - is 6 to 11 ns
+slower on an automatic conduit (measured on 3.14t with the GIL off: `meld(spell_id=...)` 253 -> 263 ns), because
+Python fills one more keyword-only default on each call; dynamic melds stayed within run-to-run noise. A warm meld by
+index id costs about one id meld more (468 ns automatic).
+
+Known, and not changed here: a borrower's meld of a version its lender staged after `conjure` and has not melded yet
+raises "Cannot build CreationContext before spell_codegen_creation exists" in every form, by index id included; meld
+the version once through the lender first.
+
+Unchanged: `spell_id=` and every other form; purge, the live-creation probes and the version verbs, which take
+spell_ids.
+
 ## Packaging and documentation
 
 The codegen profile docstrings and `docs/expert/codegen.md` now state what a profile enforces on room code: its
@@ -152,4 +195,9 @@ unchanged). `docs/expert/transactions.md` gains a section on the undone late bin
 inside another thread's late bind. The source and test maps, their indexes and the source graph describe the change
 (GitHub issue #330).
 
-Agent documentation metadata and the whole-repository LLM bundles are rebuilt for 0.2.8316.
+The docstrings of `Conduit.meld`, `Conduit.managed_spell_meld` and `SpellSpace.meld` describe `spell_index_id=` and its
+measured cost, with a note that moving `spell_id` and `spell_index_id` into a door of their own would win the cost
+back. The README, `docs/expert/governed-change.md`, `docs/intermediate/managed-spells.md` and beginner example 26 show
+the index form. The source and test maps, their indexes and the source graph describe the change (GitHub issue #346).
+
+Agent documentation metadata and the whole-repository LLM bundles are rebuilt for 0.2.8317.

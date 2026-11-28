@@ -33,7 +33,9 @@ candidate becomes the selected member and the next meld builds it, and a notch b
 the previous spell_id restores the old version, which stayed parked. Expert 17 runs the
 whole loop on public calls, as does the README's sketch. A lookup by spell_id is exact:
 `get_spell_by_spell_id` returns the version that spell_id names, parked or active, and the
-version an index has active is a lookup by the index, `get_spell_by_index_id`.
+version an index has active is a lookup by the index, `get_spell_by_index_id`, or a meld by
+it, `meld(spell_index_id=...)`, which follows every notch. A meld of a parked version's
+spell_id is refused with a KeyError that names the version's index and that meld.
 The calls that build nothing follow the same rule: `has_live_creation(spell=...)`,
 `describe_live_creation_status(spell=...)` and `purge(spell_id=...)` given a spell_id
 answer for that version, parked or active, so a parked version's objects can be

@@ -582,6 +582,7 @@ class SpellSpace(Cleanable):
             spellframe: Optional[Union[str, object]] = None,
             binding_name: Optional[str] = None,
             override: Optional[Union[dict, list, tuple]] = None,
+            spell_index_id: Optional[str] = None,
     ) -> object:
         """
         Delegate one meld call through the injected Meld runtime.
@@ -590,7 +591,9 @@ class SpellSpace(Cleanable):
             Positional strings are human SpellNames. Machine callers use
             keyword-only `spell_id=...`. A warm id meld is served here from the
             spellspace door's fast-door entry; any other id meld is forwarded
-            positionally to the door's existing ID fast lane.
+            positionally to the door's existing ID fast lane. Keyword-only
+            `spell_index_id=...` names a SpellIndex and melds the version it has
+            active.
 
         Contract:
             - Delegates resolution and lifecycle behavior to the shared
@@ -613,6 +616,15 @@ class SpellSpace(Cleanable):
             - Propagates runtime failures from the meld pipeline unchanged.
             - A space released to its pool raises SpellSpaceScopeError before any
               lookup; a permanently cleaned one raises RuntimeError.
+            - By index id (2026-11-28, TASK-2026-11-28-meld_by_spell_index_id,
+              GitHub #346): `spell_index_id=` names a SpellIndex the owner
+              conduit's Spellbook owns with an active version, or borrows through
+              an index link; the Spellbook answers it with the spell_id of the
+              version the index has active and the meld runs as
+              `meld(spell_id=<that id>, override=...)`, so it follows a notch. A
+              call without it runs the code it ran before, but the keyword costs
+              every call its default: about 10 ns a warm automatic meld, measured
+              (the SPEED NOTE at the entry test).
 
         Returns:
             object: The resolved runtime object returned by the shared meld runtime.
@@ -622,11 +634,36 @@ class SpellSpace(Cleanable):
                 Human SpellName string or concrete spell/frame object.
             spell_id:
                 Optional canonical SHA256 machine identity.
+            spellframe:
+                Optional spellframe / Protocol / frame key used for resolution.
+            binding_name:
+                Optional binding name within that frame.
             override:
                 Optional positional or keyword override payload.
+            spell_index_id:
+                Optional SpellIndex id (its ULID) naming the version the index
+                has active; takes no other selector.
+
+        Raises:
+            SpellSpaceScopeError: If the space was released to its pool.
+            RuntimeError: If the space was permanently cleaned.
+            ValueError: If `spell_index_id` is given with another selector.
+            TypeError: If `spell_index_id` is not a string.
+            KeyError: If no spell resolves - the text names the version's SpellIndex when a spell_id is a parked
+                version - or no index of the Spellbook has the `spell_index_id`.
         """
         if self._released:
             self._refuse_released()
+        # A meld by index id (#346) resolves the index to its active spell_id and melds that in the id lanes.
+        # SPEED NOTE (2026-11-28; 3.14t, the GIL off; the owner accepted the cost): as on `Conduit.meld`, whose note
+        # gives the cause and the numbers, the keyword costs the calls that leave it out the fill of one more
+        # keyword-only default - a warm automatic `SpellSpace.meld(spell_id=)` went from 244.4 to 254.0 ns (A/B
+        # against 0.2.8316, five alternating rounds, medians); dynamic stayed within the run-to-run spread. Moving
+        # `spell_id` and `spell_index_id` into a `specialized_meld(*, spell_id=None, spell_index_id=None,
+        # override=None)` would win it back and more - an estimated 12 to 22 ns a call - and waits for the owner's
+        # word, since it changes the id form's call shape.
+        if spell_index_id is not None:
+            return self._meld_by_spell_index_id(spell_index_id, spell, spell_id, spellframe, binding_name, override)
         # Warm lanes (id 2026-09-26, name/class 2026-09-27): the scoped calls `spell_id=...` alone,
         # `meld("Name")` and `meld(spell=Cls)` read the spellspace door's success-only entry here
         # (ids from `_fast_meld_doors`, names and classes from `_fast_input_doors`), saving the door
@@ -705,6 +742,57 @@ class SpellSpace(Cleanable):
             binding_name=binding_name,
             spell_override=override,
         )
+
+    def _meld_by_spell_index_id(
+            self,
+            spell_index_id: object,
+            spell: Optional[object],
+            spell_id: Optional[str],
+            spellframe: Optional[object],
+            binding_name: Optional[str],
+            override: Optional[Union[dict, list, tuple]],
+    ) -> object:
+        """
+        Internal
+
+        Meld the version a SpellIndex has active, named by the index's id: `meld(spell_index_id=...)` in a space.
+
+        Purpose:
+            The cold half of the index form (TASK-2026-11-28-meld_by_spell_index_id, GitHub #346), kept out of
+            `meld` so its warm lanes carry only the keyword and its entry test (their measured cost is the SPEED
+            NOTE in `meld`).
+
+        Contract:
+            - Called by `meld` after its released check. Refuses a call that gives `spell`, `spell_id`,
+              `spellframe` or `binding_name` beside the index id (ValueError), or a non-str id (TypeError), before
+              anything is read (`Meld._check_spell_index_id_call`).
+            - The Spellbook answers the index id with the spell_id of the version the index has active
+              (`Spellbook._selected_spell_id_for_index_id`), and `meld(spell_id=..., override=...)` melds it - the
+              warm id lane, and on a miss the door's id lane - so results, errors and lifetimes are the id form's.
+
+        Args:
+            spell_index_id: The SpellIndex id (its ULID).
+            spell: The `spell` the caller passed; refused unless None.
+            spell_id: The `spell_id` the caller passed; refused unless None.
+            spellframe: The `spellframe` the caller passed; refused unless None.
+            binding_name: The `binding_name` the caller passed; refused unless None.
+            override: Optional override payload, applied as for an id meld.
+
+        Returns:
+            object: What a meld of the index's active spell_id returns.
+
+        Raises:
+            ValueError: If another selector is given with `spell_index_id`.
+            TypeError: If `spell_index_id` is not a string.
+            KeyError: If the Spellbook answers no index of that id; the id lane's KeyError otherwise.
+
+        Threading:
+            The Spellbook's read takes no lock; the id meld follows the space's own door, as `meld(spell_id=...)`.
+        """
+        meld_door = self._meld
+        meld_door._check_spell_index_id_call("meld", spell_index_id, spell, spell_id, spellframe, binding_name)
+        selected_spell_id = meld_door._spellbook._selected_spell_id_for_index_id(spell_index_id)
+        return self.meld(spell_id=selected_spell_id, override=override)
 
     def purge(
             self,

@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/aether/conduit/spell_space/spell_space.py",
- "source_sha256": "c0f1f5864a1e9d142acc4582955dccb348c83ce9771d3067060ec9e08499979a",
+ "source_sha256": "f2f1c5b5ee31713c215aa383d66a39b704b57e8b9e1e268d5a2bcf4a7b71bde8",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder.aether.conduit.spell_space.spell_space": {
@@ -42,11 +42,11 @@
     "recycle_from_managed_context"
    ],
    "shape": {
-    "method_count": 11,
+    "method_count": 12,
     "has_bases": true,
     "trivial": false
    },
-   "span_sha256": "1b3473fa436190983ddd96a5bd10110e80a78b859944a22373c5c70437e77eb5",
+   "span_sha256": "5a40daf86b41856827d2a595a4d40fa483814b62c55ad7a0b904379760bae918",
    "role": "Explicit spellspace scope handle with request-local creations and a spellspace-facing meld door.",
    "responsibilities": [
     "is one leased spellspace scope on a conduit, pushed on the calling thread's stack when managed",
@@ -56,7 +56,8 @@
     "restores temporary Meld maps after creation disposal and before manual or managed pool return",
     "explicitly cleans its owned Meld runtime on permanent teardown to release callback references",
     "leaves its thread stack without error when released or destroyed inside its own managed block",
-    "serves warm melds by id, by name and by class from its door's fast-door entries"
+    "serves warm melds by id, by name and by class from its door's fast-door entries",
+    "melds by spell_index_id after its released check: the owner conduit's Spellbook answers the index's active spell_id and the space melds it in its id lanes (_meld_by_spell_index_id) (#346, 0.2.8317)"
    ],
    "owns_state": [
     "_id",
@@ -72,7 +73,7 @@
     "runtime",
     "cleanup"
    ],
-   "semantics_authored_against": "1b3473fa436190983ddd96a5bd10110e80a78b859944a22373c5c70437e77eb5"
+   "semantics_authored_against": "5a40daf86b41856827d2a595a4d40fa483814b62c55ad7a0b904379760bae918"
   }
  },
  "edges_out": [

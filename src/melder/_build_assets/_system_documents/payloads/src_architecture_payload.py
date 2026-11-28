@@ -14,8 +14,8 @@ Regenerate with:
 """
 
 DOCUMENT_FILE = 'src_architecture.md'
-LINE_COUNT = 6473
-CONTENT_SHA256 = '78cf1adf5b40fe6ef2afd8371ef1dc2ae99338ecc15dc551702b16a748dcc15d'
+LINE_COUNT = 6570
+CONTENT_SHA256 = '0794f4a2440844ab94c0aaf8712af604b1f139bcb394915804a59bd14dac00f1'
 
 TEXT = """# Src Architecture (C4)
 
@@ -265,7 +265,8 @@ Dependencies include:
 - Spellbook: User-facing binding and conjure surface for the DGR.
 - Spell: Bound object metadata (spellframe, spell_id, existence, permissions).
 - SpellIndex: Stable index (ULID) that categorizes and targets spells and holds
-  the active selected spell. Version history is owned by MutationResearch. It keeps the binding its first version
+  the active selected spell; a meld by its id (`meld(spell_index_id=...)`, 0.2.8317) builds that spell. Version
+  history is owned by MutationResearch. It keeps the binding its first version
   was bound with - the kind of spellframe and the address that gives (`SpellIndex.binding_signature`) - and
   admits only versions bound the same way, so a notch never moves its address (0.2.8273).
 - Conduit: Runtime scope and activation host for resolving spells via Meld.
@@ -467,19 +468,20 @@ External interfaces are Python APIs:
   disposed by cleanup_spell, ..." or "notch_spell refused: spell_id '<id>' is not a version parked in this
   Spellbook - ..." and nothing moved (0.2.8285).
   EVIDENCE:
-  - src/melder/aether/conduit/conduit.py:5711, 5860 (`notch_spell`; starts the transaction)
-  - src/melder/aether/conduit/conduit.py:5908-6126 (`_resolve_notch_target`, `_owned_notch_target`,
+  - src/melder/aether/conduit/conduit.py:5836, 5985 (`notch_spell`; starts the transaction)
+  - src/melder/aether/conduit/conduit.py:6033-6251 (`_resolve_notch_target`, `_owned_notch_target`,
     `_check_spell_argument`, `_owned_spell_by_id`, `_resolve_spell_to_move`)
-  - src/melder/aether/conduit/conduit.py:6128, 6226 (`add_to_spell_index`; starts it)
-  - src/melder/aether/conduit/conduit.py:6249, 6324 (`remove_from_spell_index`; starts it)
-  - src/melder/aether/spellbook/spellbook.py:4852 (`_add_to_spell_index` entry)
-  - src/melder/aether/spellbook/spellbook.py:4890 (`_apply_add_to_index` seam)
+  - src/melder/aether/conduit/conduit.py:6253, 6351 (`add_to_spell_index`; starts it)
+  - src/melder/aether/conduit/conduit.py:6374, 6449 (`remove_from_spell_index`; starts it)
+  - src/melder/aether/spellbook/spellbook.py:4963 (`_add_to_spell_index` entry)
+  - src/melder/aether/spellbook/spellbook.py:5001 (`_apply_add_to_index` seam)
 - `Spellbook.find_spell_by_spell_id(spell_id)` and `Conduit.get_spell_by_spell_id(spell_id,
   aetheric_frame_name="default")` (0.2.8253; renamed from `find_spell_by_id` and `get_spell_by_id`, with no
   alias): the spell a spell_id names - the active version, else the parked one - or None from the Book, and
   ValueError from the Conduit for a spell_id no conduit of the frame claims. A spell_id and a SpellIndex are
   separate things (owner ruling, 2026-10-17): the spell an index has active is a lookup by the index's id
-  (`Conduit.get_spell_by_index_id`), never the answer to a spell_id. `Conduit.get_spell_permissions(spell_id)`
+  (`Conduit.get_spell_by_index_id`), and a meld by it (`meld(spell_index_id=...)`, 0.2.8317), never the answer to a
+  spell_id. `Conduit.get_spell_permissions(spell_id)`
   answers the permissions that version was bound with. The Rift rooms' `get_spell_by_spell_id(spell_id, *,
   frame_name=None)` (renamed from `get_spell_by_id`, its command name and advertised name with it) and
   `get_spell_by_source_id` answer the spell their argument names - a capability or codegen room the Spell, a
@@ -493,14 +495,19 @@ External interfaces are Python APIs:
   - `src/melder/nexus/rift/command_system/static_command_system.py:StaticCommandSystem.get_spell_by_spell_id`,
     `StaticCommandSystem.get_spell_by_source_id`
 - `Spellbook.conjure(...)` for building a root Conduit.
-- `Conduit.meld(...)` for resolving instances.
+- `Conduit.meld(...)` for resolving instances - by a quoted name, a class, `spell_id=` (one version, active only),
+  `spell_index_id=` (0.2.8317: a SpellIndex the conduit's Spellbook owns with an active version, or borrows through
+  an index link, naming the version the index has active) or a spellframe/binding address. `SpellSpace.meld` and
+  `Conduit.managed_spell_meld` take the same forms. `spell_index_id` takes no other selector (ValueError) and must be
+  a str (TypeError); an id the Book cannot answer raises KeyError naming it.
 - `Conduit.purge(...)`, `Conduit.has_live_creation(...)`, `Conduit.describe_live_creation_status(...)` and
   `SpellSpace.purge(...)`, the doors that build nothing: a spell_id given to them names that version wherever
   the conduit can see it - its Book's own or a borrowed copy, active or parked (0.2.8269) - and every other
   selector names the version an index has active, as `meld` does. In the store the door selects they act on
   every binding of the version's spell_id: purge retires, and the probes count, what each binding filed (0.2.8274).
-- `Conduit.managed_spell_meld(spell=None, *, spell_id=None, spellframe=None, binding_name=None, override=None)`
-  (0.2.8245): a meld of a managed spell that returns a `ManagedSpellLease`; its `with` gives the object back.
+- `Conduit.managed_spell_meld(spell=None, *, spell_id=None, spellframe=None, binding_name=None, override=None,
+  spell_index_id=None)` (0.2.8245; `spell_index_id` 0.2.8317): a meld of a managed spell that returns a
+  `ManagedSpellLease`; its `with` gives the object back.
 - Managed spells (0.2.8241-0.2.8246): `Existence.managed_spell_quantity` and the keyword-only bind options
   `managed_spell_mode` (`ManagedSpellMode`: elastic | limited_quantity | queue), `managed_spell_limit`,
   `managed_spell_timeout_seconds` and `managed_spell_reset_methods` on `Spellbook.bind` / `bind_inactive`, the
@@ -598,7 +605,7 @@ disposed, since the conduit's check is refused and the index keeps its active ve
 incoming version fails its structural check is undone inside the window and refused, its borrowers untouched
 (0.2.8262). Every version of an index is bound the way its first version was, so a notch moves which version
 serves the index's address, never the address, and refuses an address another spell holds (0.2.8273).
-EVIDENCE: src/melder/aether/spellbook/spellbook.py:4213-5230 (the three seams, remeasured 2026-11-08 at 0.2.8285);
+EVIDENCE: src/melder/aether/spellbook/spellbook.py:4324-5343 (the three seams, remeasured 2026-11-08 at 0.2.8285);
 `src/melder/aether/conduit/conduit.py:Conduit.notch_spell`, `Conduit._owned_notch_target` (the target check),
 `Conduit._resolve_spell_to_move` (the index moves' spell_id), `Conduit._deactivate_borrowed_spell`,
 `Conduit._activate_borrowed_spell` and
@@ -828,8 +835,14 @@ EVIDENCE: src/melder/aether/spellbook/spellbook.py:4213-5230 (the three seams, r
 ### Sequence: Meld Resolution
 1. `Conduit.meld(...)`:
    - In dynamic mode, enforce CreationGate checks/ticketing; delegate to `Meld.meld(...)`.
+   - A `spell_index_id=` meld (0.2.8317) first asks the conduit's Spellbook for the spell_id of the version the index
+     has active (`Spellbook._selected_spell_id_for_index_id`: one lock-free read of the Book's own indexes by id,
+     then of the indexes it borrows) and continues as an id meld; a dynamic conduit holds its creation-gate ticket
+     from before that read until the meld returns, so a notch, which drains the gate first, cannot land between.
 2. `Meld.meld(...)`:
-   - Resolve spell by id or (spellframe, binding).
+   - Resolve spell by id or (spellframe, binding). A spell_id no active version carries raises KeyError "[MELD] No
+     spell found with spell_id: <id>", which goes on to name the version's SpellIndex and the meld that reaches the
+     version the index has active when the id is a version the Book can see parked (0.2.8317).
    - Enforce structural/resolution validity gates and choose reuse vs instantiate.
 3. `CreationContext` compiled execution:
    - Select no-hooks/hooks and no-overrides/overrides lanes.
@@ -1063,16 +1076,16 @@ EVIDENCE: src/melder/aether/spellbook/spellbook.py:4213-5230 (the three seams, r
    EVIDENCE:
    - `src/melder/aether/spellbook/spellbook.py:Spellbook._notch_spell`, `Spellbook._check_notched_version`,
      `Spellbook._revert_refused_notch` (step 6)
-   - src/melder/aether/spellbook/spellbook.py:4213-4578 (`_apply_notch`, `_refuse_unparked_incoming`,
+   - src/melder/aether/spellbook/spellbook.py:4324-4689 (`_apply_notch`, `_refuse_unparked_incoming`,
      `_refuse_taken_address`; remeasured 2026-11-08 at 0.2.8285)
-   - src/melder/aether/spellbook/spellbook.py:4890-4995
-   - src/melder/aether/spellbook/spellbook.py:5110-5230
+   - src/melder/aether/spellbook/spellbook.py:5001-5106
+   - src/melder/aether/spellbook/spellbook.py:5223-5343
    - src/melder/aether/aetheric_frame/lookup_container.py:157-201 (`LookupContainer.repoint`)
-   - src/melder/aether/conduit/conduit.py:5711-5906
-   - src/melder/aether/conduit/conduit.py:5908-6126
-   - src/melder/aether/conduit/conduit.py:6128-6337
-   - src/melder/aether/conduit/conduit.py:6448-6477
-   - src/melder/aether/conduit/conduit.py:6479-6522
+   - src/melder/aether/conduit/conduit.py:5836-6031
+   - src/melder/aether/conduit/conduit.py:6033-6251
+   - src/melder/aether/conduit/conduit.py:6253-6462
+   - src/melder/aether/conduit/conduit.py:6573-6602
+   - src/melder/aether/conduit/conduit.py:6604-6647
    - src/melder/aether/aetheric_frame/dev_ops/change_control_manager/transaction_manager/strategies/notch_transaction_strategy.py:239-269
    - src/melder/aether/conduit/conduit_ward/conduit_ward.py:2322-2387
    - src/melder/aether/aetheric_frame/dev_ops/spell_system_states/spell_system_states.py:1071-1186
@@ -1160,7 +1173,7 @@ check and raises `TypeError("Expected Conduit-compatible object, got {type}")`.
 THIS IS NOT A STRUCTURAL CONTRACT AND CANNOT BE SATISFIED BY DUCK TYPING - a
 conduit-shaped object that is not a `Conduit` subclass is rejected outright.
   EVIDENCE:
-  - src/melder/aether/conduit/conduit.py:5660-5662 (the check and the raise)
+  - src/melder/aether/conduit/conduit.py:5785-5787 (the check and the raise)
   - src/melder/nexus/nexus_frame_builder.py:254 (`create(...) -> Conduit`)
   - src/melder/nexus/rift/rift_space/event_system/rift_event.py
   - src/melder/nexus/rift/rift_space/memory_system/rift_memory.py
@@ -1179,6 +1192,50 @@ each entry in `src_components.md`; this list is the set that crosses components.
 - Validation strategies registered in `SpellValidationSystem`.
 
 ## Operational Invariants
+- A meld names its target by SpellIndex id (2026-11-28, 0.2.8317; TASK-2026-11-28-meld_by_spell_index_id, GitHub
+  #346, item C8 of the correctness-defects epic, #209; the owner's decisions of 2026-11-28; patch
+  meld_by_spell_index_id_2026_11_28): `Conduit.meld`, `SpellSpace.meld` and `Conduit.managed_spell_meld` take a
+  keyword-only `spell_index_id=` beside `spell_id=`, which is unchanged. The conduit's Spellbook answers the id with
+  the spell_id of the version the index has active - `Spellbook._selected_spell_id_for_index_id` reads
+  `_spell_indexes_by_id`, the Book's own indexes with an active version (exactly the keys of `_spells`), then
+  `_contracted_indexes`, the indexes it borrows through an index link - and the door melds that spell_id in its id
+  lane, warm doors included, so a meld by index id builds what a meld by the index's selected spell_id builds and
+  follows a notch. A version grant shares a version, not its index, so a granted version's index is not answered;
+  that version is melded by its spell_id. `spell_index_id` takes no other selector - `spell`, `spell_id`,
+  `spellframe` or `binding_name` beside it is a ValueError naming them, a non-str id a TypeError, one check for the
+  three doors (`Meld._check_spell_index_id_call`) - and an id the Book cannot answer raises KeyError: "[MELD] No
+  SpellIndex found with spell_index_id: <id>. ..." naming what an index id may name, or, for an index holding only
+  the Book's parked versions (one `remove_from_spell_index` minted), "[MELD] SpellIndex <id> has no active version to
+  meld: it holds only parked versions of this Spellbook (...)", naming them and how to make one active. A spell_id
+  meld that misses a version the Book can see parked - its own or a borrowed copy - keeps its KeyError's first words
+  and adds "'<Name>' (spell_id <id>) is a parked version of SpellIndex <index id>, and a meld builds only an active
+  version." with the remedy (`Meld._missing_spell_id_error`): meld `spell_index_id='<index id>'`, notch the version
+  active, or, for a granted copy, wait for the lender's notch back. The map is written beside every `_spells` write,
+  in the same Book-locked section - bind, `_reactivate_owned_spell`, `_deactivate_owned_spell`,
+  `cleanup_and_remove_spell`, `_destroy_spell_index`, `_pop_unwound_book_maps` and `_cleanup_components`, and the
+  ownership transfer's flip and rollback, which hold both Books' locks - and deleted with `_spells` at the Book's
+  cleanup. Cost, measured on 3.14t with the GIL off: the keyword is a keyword-only parameter, and CPython fills every
+  one a call leaves out from `__kwdefaults__`, so each warm automatic meld of the other forms became 6 to 11 ns slower
+  (A/B against 0.2.8316, five alternating rounds, medians: `meld(spell_id=)` 252.9 -> 262.9 ns, `meld(Cls)` 239.2 ->
+  249.9, `meld('Name')` 239.3 -> 248.5), while dynamic melds stayed within the run-to-run spread. The owner accepted
+  the cost; the SPEED NOTE in `Conduit.meld` records the split that would win it back - `spell_id` and
+  `spell_index_id` moved into a `specialized_meld`, an estimated 12 to 22 ns a call. The index form costs 468 ns a
+  warm automatic meld and 739 ns a dynamic one. Locks: the resolver's reads take none; a dynamic `Conduit.meld` holds
+  its creation-gate ticket across the read, which a notch drains first, while an automatic conduit, a SpellSpace and
+  `managed_spell_meld` read without it, so a read racing a notch's park and promotion can miss the index, as a name
+  meld misses its address; the error paths read a parked version's index under that version's own lock. No lock or
+  lock-order edge is added, and nothing persisted, cached or recorded changes. Known, not fixed (C9 of #209, found
+  while testing this): an index-link borrower cannot meld a version its lender staged after conjure and notched to,
+  in any meld form, until the lender has melded it.
+  EVIDENCE: `src/melder/aether/conduit/conduit.py:Conduit.meld`, `Conduit._meld_by_spell_index_id`,
+  `Conduit.managed_spell_meld`, `src/melder/aether/conduit/spell_space/spell_space.py:SpellSpace.meld`,
+  `SpellSpace._meld_by_spell_index_id`,
+  `src/melder/aether/spellbook/spellbook.py:Spellbook._selected_spell_id_for_index_id`,
+  `Spellbook._unknown_spell_index_id_error`, `src/melder/aether/conduit/meld/meld.py:Meld._check_spell_index_id_call`,
+  `Meld._missing_spell_id_error`,
+  `src/melder/aether/conduit/conduit_ward/transfer/transfer_of_ownership.py:TransferOfOwnership._flip_registry_and_spellbooks`,
+  `TransferOfOwnership._rollback_spellbook_move` and
+  `tests/component/melder/aether/conduit/test_conduit_component_meld_by_spell_index_id.py`.
 - A notch's seam checks its incoming version before anything moves (2026-11-08, 0.2.8285;
   TASK-2026-10-16-notch_seam_checks_incoming_before_parking, GitHub #254; the owner's word, chat 2026-11-08: "yeah do
   the small fixes and flaky CI test please"; patch small_fixes_2026_11_08): `Spellbook._apply_notch`, under the Book
@@ -2737,9 +2794,9 @@ each entry in `src_components.md`; this list is the set that crosses components.
   slots, which is why a cleaned Spellbook cannot be re-conjured rather than
   merely refusing to be: the state that would answer the question is gone.
   EVIDENCE:
-  - src/melder/aether/spellbook/spellbook.py:278 (`_conjured` initialised)
-  - src/melder/aether/spellbook/spellbook.py:800 (ownership check reads it)
-  - src/melder/aether/spellbook/spellbook.py:858 (deleted on cleanup)
+  - src/melder/aether/spellbook/spellbook.py:279 (`_conjured` initialised)
+  - src/melder/aether/spellbook/spellbook.py:809 (ownership check reads it)
+  - src/melder/aether/spellbook/spellbook.py:867 (deleted on cleanup)
 - `SpellbookConfiguration` must be frozen before Conduit creation.
 - Disposal order is established at bind: both groups contribute and book order owns shared
   names. `enforce_priority_disposal_methods=False` puts the book block last; True puts it first.
@@ -2784,10 +2841,10 @@ each entry in `src_components.md`; this list is the set that crosses components.
     gone, because the `dynamic` argument reaching it is now the EFFECTIVE mode
     resolved from the posture, which makes a mismatch structurally impossible.
   EVIDENCE:
-  - src/melder/aether/spellbook/spellbook.py:8528-8571
-    (`Spellbook._settle_or_inherit_conjure_mode`; in-place settle :7947-7959,
-    effective-mode return :7960; remeasured 2026-11-08 at 0.2.8285)
-  - src/melder/aether/spellbook/spellbook.py:8784
+  - src/melder/aether/spellbook/spellbook.py:8645-8688
+    (`Spellbook._settle_or_inherit_conjure_mode`; in-place settle :8675-8687,
+    effective-mode return :8688; remeasured 2026-11-28 at 0.2.8317)
+  - src/melder/aether/spellbook/spellbook.py:8902
     (`conjure` resolves the effective mode as it enters the transaction window,
     passing `dynamic=self._settle_or_inherit_conjure_mode(dynamic)`)
   - src/melder/aether/aetheric_frame/aetheric_frame.py:726-787
@@ -2877,6 +2934,31 @@ each entry in `src_components.md`; this list is the set that crosses components.
   And ACL Managers; the document-view key map in Component: Packaged Hardcopy Documents And Public Helper Exports.
 
 ## Failure Modes and Error Paths
+- A meld by index id refuses before anything is read (0.2.8317): ValueError "meld accepts `spell_index_id` alone, but
+  `<selector>` was also given. ..." when `spell`, `spell_id`, `spellframe` or `binding_name` comes with it
+  (`managed_spell_meld` names itself), and TypeError "meld `spell_index_id` must be a string; got <type>.". An id the
+  conduit's Spellbook neither owns with an active version nor borrows through an index link raises KeyError "[MELD]
+  No SpellIndex found with spell_index_id: <id>. A meld by spell_index_id names an index this conduit's Spellbook
+  owns, or borrows through an index link (add_index_to_contract), that has an active version: ..."; an index that
+  holds only the Book's parked versions raises KeyError "[MELD] SpellIndex <id> has no active version to meld: it
+  holds only parked versions of this Spellbook (...)" with the way to make one active.
+  EVIDENCE: `src/melder/aether/conduit/meld/meld.py:Meld._check_spell_index_id_call` and
+  `src/melder/aether/spellbook/spellbook.py:Spellbook._unknown_spell_index_id_error`.
+- Changed in 0.2.8317: a meld of a parked version's spell_id - one a notch parked, one split off by
+  `remove_from_spell_index`, or a borrowed copy its lender's notch parked - raises KeyError "[MELD] No spell found
+  with spell_id: <id>. '<Name>' (spell_id <id>) is a parked version of SpellIndex <index id>, and a meld builds only
+  an active version." followed by the remedy (meld `spell_index_id='<index id>'`, notch it active first, or, for a
+  granted copy, wait for the lender's notch back); the text was the first sentence alone. A spell_id no visible
+  version carries keeps the text it had.
+  EVIDENCE: `src/melder/aether/conduit/meld/meld.py:Meld._missing_spell_id_error`.
+- Known, not fixed (C9 of the correctness-defects epic, #209; found while testing 0.2.8317 and reproduced on
+  0.2.8316): after a lender notches to a version it staged after conjure and has not melded, an index-link borrower's
+  meld of that version - by spell_id, class, name or index id - raises RuntimeError "Cannot build CreationContext
+  before spell_codegen_creation exists. Run analyzer -> processor -> planner -> codegen creation first."; once the
+  lender melds it, the borrower's meld builds it. After the notch the borrower Book's validation flag stays down, so
+  its meld takes no meld-time gate (UNKNOWN why).
+  EVIDENCE: `src/melder/aether/spellbook/spellbook.py:Spellbook._check_notched_version` and
+  `src/melder/aether/aetheric_frame/dev_ops/risk_manager/risk_manager.py:RiskManager._refresh_spellbook_flag`.
 - Fixed in 0.2.8301: removing a Rift, or cleaning Nexus up, waits for the agents inside the Rift instead of tearing
   it down under them (GitHub #274, step 3; the owner's direction, chat 2026-11-08: tag agents going in, close the
   door, wait for them to leave, then clean up). Until then only commands held a `RiftGate` ticket - a workstation
@@ -4371,9 +4453,9 @@ Spellbook and binding:
 
 - path: `src/melder/aether/spellbook/spellbook.py`
   start_line: 1
-  end_line: 9354
-  loc: 9354
-  verified_at: 2026-11-23T10:55:43Z
+  end_line: 9471
+  loc: 9471
+  verified_at: 2026-11-28T19:42:52Z
   note: Spellbook core and conjure pipeline.
 - path: `src/melder/aether/spellbook/spellbook_creation_system.py`
   start_line: 1
@@ -4425,9 +4507,9 @@ Spellbook and binding:
   note: stable index that categorizes/targets spells and holds the active selected spell.
 - path: `src/melder/aether/spellbook/spell.py`
   start_line: 1
-  end_line: 2050
-  loc: 2050
-  verified_at: 2026-11-08T12:50:22Z
+  end_line: 2053
+  loc: 2053
+  verified_at: 2026-11-28T19:42:52Z
   note: spell metadata and hooks.
 - path: `src/melder/aether/spellbook/existence/existence.py`
   start_line: 1
@@ -5107,9 +5189,9 @@ Conduit runtime:
 
 - path: `src/melder/aether/conduit/conduit.py`
   start_line: 1
-  end_line: 8049
-  loc: 8049
-  verified_at: 2026-11-08T12:50:22Z
+  end_line: 8174
+  loc: 8174
+  verified_at: 2026-11-28T19:42:52Z
   note: conduit lifecycle and meld facade.
 - path: `src/melder/aether/conduit/conduit_pool.py`
   start_line: 1
@@ -5143,9 +5225,9 @@ Conduit runtime:
   note: permission enum.
 - path: `src/melder/aether/conduit/conduit_ward/transfer/transfer_of_ownership.py`
   start_line: 1
-  end_line: 2225
-  loc: 2225
-  verified_at: 2026-10-24T22:31:53Z
+  end_line: 2231
+  loc: 2231
+  verified_at: 2026-11-28T19:42:52Z
   note: ownership transfer.
 
 Resolution and creations:
@@ -5172,9 +5254,9 @@ Resolution and creations:
   note: one leased managed object and its pool.
 - path: `src/melder/aether/conduit/meld/meld.py`
   start_line: 1
-  end_line: 2623
-  loc: 2623
-  verified_at: 2026-11-23T10:55:43Z
+  end_line: 2758
+  loc: 2758
+  verified_at: 2026-11-28T19:42:52Z
   note: meld orchestration.
 - path: `src/melder/aether/conduit/meld/creation_context/creation_context.py`
   start_line: 1
@@ -5208,9 +5290,9 @@ Resolution and creations:
   note: conduit/root specialization seam over the generic creations store.
 - path: `src/melder/aether/conduit/spell_space/spell_space.py`
   start_line: 1
-  end_line: 795
-  loc: 795
-  verified_at: 2026-10-25T03:47:32Z
+  end_line: 883
+  loc: 883
+  verified_at: 2026-11-28T19:42:52Z
   note: spellspace scoping; lease flag and finished exits.
 - path: `src/melder/aether/conduit/spell_space/spell_space_pool.py`
   start_line: 1
@@ -5884,6 +5966,21 @@ receiving book's order keeps the spell_id, moves the binding hash and is reporte
 - `src/melder/utilities/ai_native_support_tools/protocol_crafter.py`
 
 ## Context / Handoff Summary
+2026-11-28 a meld names its target by SpellIndex id (0.2.8317; TASK-2026-11-28-meld_by_spell_index_id, GitHub #346,
+item C8 of #209; the owner's decisions of 2026-11-28; patch meld_by_spell_index_id_2026_11_28): `Conduit.meld`,
+`SpellSpace.meld` and `Conduit.managed_spell_meld` take `spell_index_id=` beside `spell_id=`, which stays; the
+conduit's Spellbook answers it from a new index-id map beside `_spells` (`_spell_indexes_by_id`, written at its eleven
+writers) or from its borrowed indexes, and the meld continues in the id lane, so it follows a notch; a spell_id meld
+of a parked version names its index. The owner accepted the measured cost to the other warm melds (6 to 11 ns
+automatic); the SPEED NOTE in `Conduit.meld` records the `specialized_meld` split that would win it back. A new first
+operational invariant, three failure modes (two new, one changed - and C9, found while testing, known and not fixed),
+the boundary list, the glossary's SpellIndex, the Meld Resolution sequence and the code map (six files remeasured)
+carry it; the component map carries the per-component contracts. Numeric citations into conduit.py, spellbook.py and
+transfer_of_ownership.py past the edits moved and were remapped line by line; the settle-then-inherit inner
+citations, stale since an earlier lane, point at the settlement block and its return again, and the conjure call's
+citation at its `dynamic=` line. Still unknown: see Unknowns. Where to start: src_components, Component: Conduit
+Runtime (Normal and Lesser), then Component: Spellbook Core (Binding and Conjure).
+
 2026-11-09 the Rift gate: removing a Rift, or cleaning Nexus up, waits for the agents inside it (0.2.8301, GitHub
 #274, step 3; the owner's direction, chat 2026-11-08: tag agents going in, close the door, wait for them to leave,
 then clean up). `RiftGate` holds one ticket per thread inside (a thread-local depth, `_RiftGateHolder`), lets a

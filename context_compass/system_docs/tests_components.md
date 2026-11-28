@@ -2081,6 +2081,14 @@ Protects:
   and four threads melding while 40 notches flip the lineage never build the definition (a lookup that lands
   inside a notch's swap may raise the pre-existing KeyError, which the test accepts). Every flag check asserts
   that the registry's published set agrees with the lineage's flag
+- a meld by SpellIndex id (0.2.8317, #346; `test_conduit_component_meld_by_spell_index_id.py`, 17 tests, 23 cases):
+  `Conduit.meld`, `SpellSpace.meld` and `managed_spell_meld` with `spell_index_id=` build what the index's selected
+  spell_id builds, automatic and dynamic, and follow a notch there and back (a version's own object comes back); a
+  borrower melds the lender's index by its id (the lender builds the notched version first - C9 of #209); each door
+  refuses another selector (five) and a non-str id, and an unknown id and an index holding only parked versions
+  raise KeyErrors naming them; a meld of a parked spell_id, own or borrowed, names its index while an unknown one
+  keeps its text; and the Book's index-id map equals `_spells`' key ids after a late bind, `cleanup_spell`, a
+  refused late bind, the two index moves, a transfer and teardown.
 - purge and the live-creation probes by spell_id (0.2.8269;
   `test_conduit_component_probe_and_purge_reach_every_version.py`, 24 tests, 37 cases): a version a notch parked is
   probed and purged by its spell_id in the store its existence selects - `unique`, `many`, `unique_per_conduit`,
@@ -2238,6 +2246,7 @@ Key Files (C1):
 - `tests/component/melder/aether/conduit/test_conduit_component_waiting_consumer_wakes_for_its_provider.py`
   (the S1 matrix, 2026-11-07)
 - `tests/component/melder/aether/conduit/test_conduit_component_meld_refuses_open_late_bind.py` (2026-11-23)
+- `tests/component/melder/aether/conduit/test_conduit_component_meld_by_spell_index_id.py` (2026-11-28)
 - `tests/component/melder/aether/aetheric_mediator/test_aetheric_mediator_component.py` (catalogued 2026-11-08)
 - `tests/component/melder/aether/aetheric_mediator/test_aetheric_mediator_concurrency_component.py`
   (catalogued 2026-11-08)
@@ -5460,6 +5469,14 @@ that cannot be remeasured, and it was NOT the union of the Key Files lists.
   note: another thread's meld of a late-bound spell, or of a consumer whose new plan reaches one, is refused until
     the bind commits - also after the binding thread melded it (the flag pin); the binding thread's own meld
     builds (0.2.8316, #330; 4 tests; written failing first).
+- path: `tests/component/melder/aether/conduit/test_conduit_component_meld_by_spell_index_id.py`
+  start_line: 1
+  end_line: 560
+  loc: 560
+  verified_at: 2026-11-28T19:42:52Z
+  note: a meld by SpellIndex id on the three doors - the active version, a notch followed, a borrowed index, the
+    refusals, the parked spell_id miss text - and the Book's index-id map after every writer of `_spells`
+    (0.2.8317, #346; 17 tests, 23 cases; written failing first).
 
 ## Diagrams
 ### ASCII Component Diagram (C3/C2)
@@ -5814,6 +5831,11 @@ graph TD
   scan/bind coverage grows.
 
 ## Context / Handoff Summary
+2026-11-28 a meld by SpellIndex id (0.2.8317, GitHub #346): one new component module,
+`test_conduit_component_meld_by_spell_index_id.py` (560 lines; 17 tests, 23 cases, written failing first), joins the
+conduit component cluster's coverage list, its file list and the core map. Its borrower test melds the notched version
+through the lender first, around C9 of #209, which it names.
+
 2026-11-09 the Rift gate (no notch from this pass; documentation only; GitHub #274 step 3, 0.2.8301): two new
 modules are catalogued and recorded in the core map. The component module
 `test_rift_component_gate_drains_before_teardown.py` (1348 lines; 13 tests, 23 cases) joins the Aether Component

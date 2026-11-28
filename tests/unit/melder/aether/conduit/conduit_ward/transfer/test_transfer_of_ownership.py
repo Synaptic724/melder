@@ -748,6 +748,8 @@ class FakeSpellbook:
         """
         self._lock = threading.RLock()
         self._spells: Dict[SpellIndex, Any] = {}
+        # The index-id map the real Book keeps beside `_spells`; the flip and its rollback write both (#346).
+        self._spell_indexes_by_id: Dict[str, SpellIndex] = {}
         self._lookup_spells: Dict[str, SpellIndex] = {}
         self._spells_by_id: Dict[str, Any] = {}
         self._contracted_spells: Dict[str, Dict[SpellIndex, Any]] = {}

@@ -1,7 +1,7 @@
 {
  "schema_version": 1,
  "source": "src/melder/_build_assets/_bind_guard/manifest/bind_guard_manifest.py",
- "source_sha256": "60cbec8a6b872f54cf2b5bbbe84ca7264f4d5834b155cd66e3f7ee0b8a8c7050",
+ "source_sha256": "e388f48595c33732d1136cd1c6cfcf3df7d9c19020fbfdaf834b7dab854521f5",
  "generator": "tools/system_documents/python/extract_graph.py",
  "nodes": {
   "melder._build_assets._bind_guard.manifest.bind_guard_manifest": {

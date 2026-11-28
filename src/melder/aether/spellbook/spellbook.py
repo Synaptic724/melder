@@ -219,6 +219,7 @@ class Spellbook(Cleanable):
         "_spell_id_pool",
         "_spell_system_states",
         "_spell_ids",
+        "_spell_indexes_by_id",
         "_spellbook_validation_required",
         "_spells",
         "_spells_by_id",
@@ -352,6 +353,9 @@ class Spellbook(Cleanable):
 
         # ACTIVE resolution surface — a spell is PULLED from all of these on inactivate
         self._spells: dict[SpellIndex, Spell] = {}          # ACTIVE: index -> active spell (cold meld resolves here)
+        # ACTIVE: index id -> SpellIndex, exactly the keys of `_spells`, written beside every `_spells` write; a meld by
+        # spell_index_id reads it (`_selected_spell_id_for_index_id`; TASK-2026-11-28-meld_by_spell_index_id, #346).
+        self._spell_indexes_by_id: dict[str, SpellIndex] = {}
         self._lookup_spells: dict[tuple, SpellIndex] = {}   # ACTIVE: spell._key (frame_key,bind_key) -> index (binding lookup)
         self._spells_by_id: dict[str, Spell] = {}           # ACTIVE: spell_id -> active spell (meld-by-id)
         self._spell_id_pool: dict[str, Spell] = {}          # ACTIVE: spell_id -> active spell (warm pool)
@@ -435,7 +439,9 @@ class Spellbook(Cleanable):
               versions and the indexes only they hold included
               (`_cleanup_spells`).
             - Clears and nulls owned and contracted registries, lookup maps,
-              version caches, spell_id maps, and the in-flight disposal marks.
+              version caches, spell_id maps, the index-id map
+              (`_spell_indexes_by_id`, with `_spells`), and the in-flight
+              disposal marks.
             - Cleans local rich configuration only when it is not the
               frame-owned shared configuration object.
             - Cleans validation subsystems.
@@ -471,10 +477,12 @@ class Spellbook(Cleanable):
 
         try:
             self._spells.clear()
+            self._spell_indexes_by_id.clear()
             self._inactive_spells.clear()
         except Exception as e:
             self._logger.error(f"Error clearing _spells: {e}", "_cleanup_components", exc_info=True)
         del self._spells
+        del self._spell_indexes_by_id
         del self._inactive_spells
 
         try:
@@ -721,8 +729,8 @@ class Spellbook(Cleanable):
             parked versions (the index's membership is read under the index
             lock inside the Spellbook lock - Spellbook -> index, the order
             `_dispose_spell` takes, so no new edge), unregisters its index and
-            drops it from `_spells` and `_lookup_spells` under the Spellbook
-            lock; releases the lock for
+            drops it from `_spells`, `_spell_indexes_by_id` and `_lookup_spells`
+            under the Spellbook lock; releases the lock for
             the risk-manager and Aether/frame calls; takes it again to drop the
             id maps (the Nexus record is removed after); releases the frame
             lookup; and cleans the spell and its index last, holding no Spellbook
@@ -793,6 +801,7 @@ class Spellbook(Cleanable):
                 )
 
             self._spells.pop(target_spell_index, None)
+            self._spell_indexes_by_id.pop(target_spell_index.id, None)
             existing_lookup = self._lookup_spells.get(target_lookup_key)
             if existing_lookup is target_spell_index:
                 self._lookup_spells.pop(target_lookup_key, None)
@@ -1625,8 +1634,9 @@ class Spellbook(Cleanable):
             - The spell must be the active owned spell for its id (present in
               `_spells_by_id`); otherwise raises.
             - Pulls the spell from the four active owned maps (`_spells`,
-              `_lookup_spells`, `_spells_by_id`, `_spell_id_pool`) and parks it
-              in `_inactive_spells`.
+              `_lookup_spells`, `_spells_by_id`, `_spell_id_pool`), its index
+              from the index-id map beside `_spells` (`_spell_indexes_by_id`),
+              and parks it in `_inactive_spells`.
             - Leaves `_spell_ids` untouched: existence is kept across the
               inactive window; only a full unregister drops the id.
             - Does not touch the SpellIndex or the framewide lookup; the caller
@@ -1665,6 +1675,7 @@ class Spellbook(Cleanable):
                 )
                 raise RuntimeError(f"Owned spell_id mapped to a different spell (spell_id={spell_id}).")
             self._spells.pop(spell_index, None)
+            self._spell_indexes_by_id.pop(spell_index.id, None)
             self._lookup_spells.pop(binding_key, None)
             self._spells_by_id.pop(spell_id, None)
             self._spell_id_pool.pop(spell_id, None)
@@ -1689,7 +1700,8 @@ class Spellbook(Cleanable):
               `_inactive_spells`); otherwise raises.
             - Removes the spell from `_inactive_spells` and repopulates the four
               active owned maps (`_spells`, `_lookup_spells`, `_spells_by_id`,
-              `_spell_id_pool`).
+              `_spell_id_pool`) and the index-id map beside `_spells`
+              (`_spell_indexes_by_id`).
             - `_spell_ids` already carries the id (existence was kept on park).
             - Does not touch the SpellIndex or the framewide lookup.
 
@@ -1727,6 +1739,7 @@ class Spellbook(Cleanable):
                 raise RuntimeError(f"Parked owned spell_id mapped to a different spell (spell_id={spell_id}).")
             self._inactive_spells.pop(spell_id, None)
             self._spells[spell_index] = spell
+            self._spell_indexes_by_id[spell_index.id] = spell_index
             self._lookup_spells[binding_key] = spell_index
             self._spells_by_id[spell_id] = spell
             self._spell_id_pool[spell_id] = spell
@@ -2418,6 +2431,104 @@ class Spellbook(Cleanable):
         if contracted_spell_index is not None:
             return self._find_contracted_spell(contracted_spell_index)
         return None
+
+    def _selected_spell_id_for_index_id(self, spell_index_id: str) -> str:
+        """
+        Internal
+
+        Answer a SpellIndex id with the spell_id of the version that index has active.
+
+        Purpose:
+            The Spellbook's half of a meld by index id - `Conduit.meld`, `SpellSpace.meld` and
+            `Conduit.managed_spell_meld` with `spell_index_id=` (TASK-2026-11-28-meld_by_spell_index_id, GitHub
+            #346). A Spellbook owns its indexes, so it answers the index id; the door then melds the returned
+            spell_id in its id lane, so a meld by index id builds the version the index has active and follows a
+            notch.
+
+        Contract:
+            - Reads `_spell_indexes_by_id` - the indexes this Book owns and has an active version of, exactly the
+              keys of `_spells` - then `_contracted_indexes`, the indexes it borrows through an index link
+              (`add_index_to_contract`), and returns the index's `selected_spell_id`.
+            - A version grant (`add_spell_to_contract`) shares one version, not its index, so a granted version's
+              index is not answered here; meld that version by its spell_id.
+            - An id neither map holds raises KeyError (`_unknown_spell_index_id_error`): an unknown or foreign
+              index, or one holding only this Book's parked versions, which the text names.
+            - Pure lookup: builds, registers and mutates nothing.
+
+        Args:
+            spell_index_id: The SpellIndex id (its ULID).
+
+        Returns:
+            str: The spell_id of the version the index has active.
+
+        Raises:
+            KeyError: If no index this Book owns with an active version, or borrows, has the id.
+            RuntimeError: If this Spellbook has been cleaned.
+
+        Threading:
+            Lock-free: one `dict.get` on each map, as the meld doors read `_spells_by_id`. Every writer of
+            `_spell_indexes_by_id` holds the Book lock and writes it beside `_spells`, and the borrowed map is
+            written under the Book lock too. `Conduit.meld` on a dynamic conduit reads it under the conduit's
+            creation-gate ticket, which a notch drains before its park and promotion; elsewhere - an automatic
+            conduit, a SpellSpace, `managed_spell_meld` - a read racing that park and promotion can miss the index
+            for that moment, as a name meld racing it misses its address.
+
+        Lifecycle / Cleanup:
+            A cleaned Spellbook raises its cleaned RuntimeError.
+        """
+        if self._cleaned:
+            self.check_cleaned()
+        spell_index = self._spell_indexes_by_id.get(spell_index_id)
+        if spell_index is None:
+            spell_index = self._contracted_indexes.get(spell_index_id)
+            if spell_index is None:
+                raise self._unknown_spell_index_id_error(spell_index_id)
+        return spell_index.selected_spell_id
+
+    def _unknown_spell_index_id_error(self, spell_index_id: str) -> KeyError:
+        """
+        Internal
+
+        Build the KeyError for an index id this Spellbook cannot meld, naming what it holds of that index.
+
+        Contract:
+            - When this Book's parked versions belong to an index of that id - an index `remove_from_spell_index`
+              minted, which holds no active version until a notch - the text names them and the way to make one
+              active: "[MELD] SpellIndex <id> has no active version to meld: it holds only parked versions of this
+              Spellbook (...)".
+            - Otherwise "[MELD] No SpellIndex found with spell_index_id: <id>." followed by what an index id may
+              name and the remedy.
+            - Returns the error; the caller raises it. Mutates nothing.
+
+        Args:
+            spell_index_id: The index id `_selected_spell_id_for_index_id` could not answer.
+
+        Returns:
+            KeyError: The error to raise.
+
+        Threading:
+            Runs on the error path only. Walks a one-call snapshot of `_inactive_spells` (`list(...)`, exact under
+            concurrent writers) and reads each parked version's index under that version's own lock
+            (`Spell._spell_index_unless_cleaned`), holding no other lock.
+        """
+        parked: list[str] = []
+        for spell in list(self._inactive_spells.values()):
+            spell_index = spell._spell_index_unless_cleaned()
+            if spell_index is not None and spell_index.id == spell_index_id:
+                parked.append(f"'{spell.spell_name}' (spell_id {spell.spell_id})")
+        if parked:
+            return KeyError(
+                f"[MELD] SpellIndex {spell_index_id} has no active version to meld: it holds only parked versions of "
+                f"this Spellbook ({', '.join(parked)}), and a meld builds only an active version. Notch one of them "
+                "active first - while another spell holds the index's address, move the version into that spell's "
+                "index with add_to_spell_index and notch it there - then meld by that index's spell_index_id."
+            )
+        return KeyError(
+            f"[MELD] No SpellIndex found with spell_index_id: {spell_index_id}. A meld by spell_index_id names an "
+            "index this conduit's Spellbook owns, or borrows through an index link (add_index_to_contract), that has "
+            "an active version: pass the id of such an index (spell.spell_index.id of one of its versions), or meld "
+            "a version by its spell_id."
+        )
 
     def _find_spell_count(self) -> int:
         """
@@ -5028,8 +5139,9 @@ class Spellbook(Cleanable):
               STORY-2026-10-17-staged_version_releases_active_signature).
 
         Steps:
-            1. Spellbook: drop the active-map entry, and the binding-key route only
-               when it routes the key to this index.
+            1. Spellbook: drop the active-map entry and its index-id entry
+               (`_spell_indexes_by_id`), and the binding-key route only when it
+               routes the key to this index.
             2. Frame: release the claim the departing member holds (by spell_id; a
                no-op when it holds none, as a parked version claims no signature)
                + unregister from the spell registry.
@@ -5050,6 +5162,7 @@ class Spellbook(Cleanable):
         """
         with self._lock:
             self._spells.pop(spell_index, None)
+            self._spell_indexes_by_id.pop(spell_index.id, None)
             # The route goes only when it routes the key to THIS index: the departing
             # parked member shares its key with the active version it was staged
             # beside, and the route is that version's (0.2.8263).
@@ -6274,8 +6387,9 @@ class Spellbook(Cleanable):
         Take an unwound late bind off the Book's active maps.
 
         Contract:
-            - Pops `_spells[spell_index]`, and `_lookup_spells[spell._key]` only while it routes to this index - the
-              pops `cleanup_and_remove_spell` makes, under the Book lock, as every writer of those maps does.
+            - Pops `_spells[spell_index]` and `_spell_indexes_by_id[spell_index.id]`, and `_lookup_spells[spell._key]`
+              only while it routes to this index - the pops `cleanup_and_remove_spell` makes, under the Book lock, as
+              every writer of those maps does.
 
         Args:
             spell: The unwound Spell.
@@ -6286,6 +6400,7 @@ class Spellbook(Cleanable):
         """
         with self._lock:
             self._spells.pop(spell_index, None)
+            self._spell_indexes_by_id.pop(spell_index.id, None)
             if self._lookup_spells.get(spell._key) is spell_index:
                 self._lookup_spells.pop(spell._key, None)
 
@@ -7299,7 +7414,8 @@ class Spellbook(Cleanable):
                     late_bind_thread_id=late_bind_thread_id,
                 )
                 # Publish into the four active maps (_lookup_spells, _spells, and through
-                # _register_owned_spell_id _spells_by_id and _spell_id_pool) under the Book lock, as every
+                # _register_owned_spell_id _spells_by_id and _spell_id_pool) and the index-id map beside _spells
+                # (_spell_indexes_by_id) under the Book lock, as every
                 # other writer of `_spells` does (removal, notch park and promote, index destruction,
                 # transfer and its rollback), so a walk that holds the lock never meets this insert
                 # mid-walk. Narrow on purpose: claim_lookup above and the bind callbacks stay outside it.
@@ -7307,6 +7423,7 @@ class Spellbook(Cleanable):
                 with self._lock:
                     self._lookup_spells[new_spell._key] = spell_index
                     self._spells[spell_index] = new_spell
+                    self._spell_indexes_by_id[spell_index.id] = spell_index
                     self._register_owned_spell_id(new_spell.spell_id, new_spell)
 
                 # Configuration-discipline evidence: count binds that ran

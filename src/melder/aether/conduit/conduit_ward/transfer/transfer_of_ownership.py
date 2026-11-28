@@ -1004,13 +1004,16 @@ class TransferOfOwnership(Cleanable):
         self.check_cleaned()
         spell_id = spell_obj.spell_index.selected_spell_id
         with SafeGuard(tgt_book._lock, src_book._lock):
+            # `_spell_indexes_by_id` mirrors each Book's `_spells` keys (a meld by spell_index_id reads it).
             tgt_book._spells.pop(spell_obj.spell_index, None)
+            tgt_book._spell_indexes_by_id.pop(spell_obj.spell_index.id, None)
             tgt_book._lookup_spells.pop(spell_obj._key, None)
             if tgt_book._spells_by_id is not None:
                 tgt_book._spells_by_id.pop(spell_id, None)
             if tgt_book._spell_id_pool is not None:
                 tgt_book._spell_id_pool.pop(spell_id, None)
             src_book._spells[spell_obj.spell_index] = spell_obj
+            src_book._spell_indexes_by_id[spell_obj.spell_index.id] = spell_obj.spell_index
             src_book._lookup_spells[spell_obj._key] = spell_obj.spell_index
             if src_book._spells_by_id is not None:
                 existing = src_book._spells_by_id.get(spell_id)
@@ -1497,8 +1500,10 @@ class TransferOfOwnership(Cleanable):
             with SafeGuard(src_book._lock, tgt_book._lock):
                 src_had = spell_obj.spell_index in src_book._spells
                 tgt_had = spell_obj.spell_index in tgt_book._spells
+                # `_spell_indexes_by_id` mirrors each Book's `_spells` keys (a meld by spell_index_id reads it).
                 if src_had:
                     src_book._spells.pop(spell_obj.spell_index, None)
+                    src_book._spell_indexes_by_id.pop(spell_obj.spell_index.id, None)
                     src_book._lookup_spells.pop(spell_obj._key, None)
                     src_book._unregister_owned_spell_id(spell_id, spell_obj)
                     src_states.unregister_index(spell_obj.spell_index)
@@ -1507,6 +1512,7 @@ class TransferOfOwnership(Cleanable):
                     )
                 if not tgt_had:
                     tgt_book._spells[spell_obj.spell_index] = spell_obj
+                    tgt_book._spell_indexes_by_id[spell_obj.spell_index.id] = spell_obj.spell_index
                     tgt_book._lookup_spells[spell_obj._key] = spell_obj.spell_index
                 if tgt_book._spells_by_id is not None:
                     existing = tgt_book._spells_by_id.get(spell_id)

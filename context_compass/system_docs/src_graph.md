@@ -228,7 +228,7 @@ descriptors and reassemble.
 
 ## src/melder/__version__.py
 
-- source_sha256: `3a236377f9a8d8631fdffb5a4214abd36c1d3eb7e85ff4062d9709d6af6f4ff9`
+- source_sha256: `1aa40d97ad7af2f28ea5293acfd1fd0d4adc54d3fb32b0cb712f757b63abe146`
 - nodes: 1
 
 ### Nodes
@@ -317,7 +317,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_agent_documentation/manifest/agent_documentation_manifest.py
 
-- source_sha256: `a38db5209f33ade9f7614984b33cd7e1e16ee837e2793a2a80fe06f648770f51`
+- source_sha256: `1a0cf231d346cdc6adac7175b9e458282dd391b1d18f19859bc7249f65b9ae7f`
 - nodes: 1
 
 ### Nodes
@@ -396,7 +396,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_bind_guard/manifest/bind_guard_manifest.py
 
-- source_sha256: `60cbec8a6b872f54cf2b5bbbe84ca7264f4d5834b155cd66e3f7ee0b8a8c7050`
+- source_sha256: `e388f48595c33732d1136cd1c6cfcf3df7d9c19020fbfdaf834b7dab854521f5`
 - nodes: 1
 
 ### Nodes
@@ -474,7 +474,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/manifest/graph_adjacency_manifest.py
 
-- source_sha256: `8c0d2527d67267e9b8030ce5d05ab2c33468f6631da437c74a22db88e775415f`
+- source_sha256: `28718d6962140fafacdc7c1bf68b84b98c2af14802c0b89e499f05826c922c9b`
 - nodes: 1
 
 ### Nodes
@@ -491,7 +491,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/manifest/system_documents_index.py
 
-- source_sha256: `a36b69c2d6ecde537a74858697b9e30df4ed18e554ea2a1c99981940c6fdae27`
+- source_sha256: `507b5b7dcdc1fb262070687d68b0867d3e974ac34af972c323ce3ac633d5effd`
 - nodes: 1
 
 ### Nodes
@@ -508,7 +508,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/manifest/system_documents_manifest.py
 
-- source_sha256: `4a56a57f06f5c3decfd87380762d465d68ebea90f66c6da082c75f5bd2a37a20`
+- source_sha256: `17ba54d0e68abc1b45849aad6ce1649d33a302d35c3f0d608733c398760b5100`
 - nodes: 1
 
 ### Nodes
@@ -528,7 +528,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/payloads/src_architecture_payload.py
 
-- source_sha256: `1a61a7ff173085f326b3604e15de8d97153d44ccb4a7df2eb5875059f89c9855`
+- source_sha256: `ee75b9d7de8779ff80c3309fb380b7b40610842b132b2a54e6a20fde22173018`
 - nodes: 1
 
 ### Nodes
@@ -545,7 +545,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/payloads/src_components_payload.py
 
-- source_sha256: `145e45acbb8107891f38049be1e8b76baded1a9df0162775c3fec1da409481a9`
+- source_sha256: `8ab44b4f4b07034ff3825b1f22ec83386080830f7b2372f15a76be6d4b92d33b`
 - nodes: 1
 
 ### Nodes
@@ -562,7 +562,7 @@ descriptors and reassemble.
 
 ## src/melder/_build_assets/_system_documents/payloads/src_graph_payload.py
 
-- source_sha256: `c2a283dc31c2a37c2f5c4d6df6ea573ad4eb8a97f17bd3c859099974644828a0`
+- source_sha256: `8f2b25912d7dfb4fe85b10ecd330a11dcb460f3e9ae77a3af095b9ef9867f186`
 - nodes: 1
 
 ### Nodes
@@ -4449,7 +4449,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/conduit/conduit.py
 
-- source_sha256: `2dc8842b0e43cc378a985bcfa599ac405f2c1b57e13ff33fc6fe44b6d419b299`
+- source_sha256: `60f778dad326c4be7e884aea753f20e3924c57973123e0a60c44679a257963a9`
 - nodes: 2
 
 ### Nodes
@@ -4505,6 +4505,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - takes a version out of every contract of its Book's root conduit before the Book disposes it: hands the root ward's _emit_spell_disposed to Spellbook._dispose_spell as release_contracts, from the root or a lesser of its lineage, and emits an index destroy with no member id when the index went too; the Spellbook's own cleanup_spell comes here once conjured (cleanup_spell, 0.2.8261)
   - files an existing-object spell's object in its store under the spell's store key (_register_to_creations), the key emitted plans read it by, so it is filed once; one bound again under another binding while its first filing is alive is filed under both keys and disposed with each binding's list when the store ends (0.2.8274)
   - runs a notch's borrower fan-out inside the notch's transaction window, as Spellbook._notch_spell's after-switch hook, with its ward links' lineages sealed and frozen (linked_root_conduit_ids); on a failed fan-out moves the borrowers back after the Book's reversal (_undo_borrower_fan_out) so a notch stands whole or not at all (design 2, 0.2.8275)
+  - melds by spell_index_id in meld and managed_spell_meld: the keyword is tested once at entry, the Spellbook answers the index's active spell_id, and the meld continues in the id lane - under the creation-gate ticket on a dynamic conduit (_meld_by_spell_index_id) (#346, 0.2.8317)
 - owns_state: `_meld`, `_creations`, `_conduit_ward`, `_creation_gate`, `_spellspace_stack`, `_spellspace_pool`, `_conduit_pool`, `_transaction_identity`
 - phases: `init`, `runtime`, `cleanup`
 - public methods: `add_bind_hooks`, `add_index_to_contract`, `add_spell_to_contract`, `add_spell_to_contract_with_dependencies`, `add_spells_to_contract`, `add_to_spell_index`, `begin_transaction`, `bind`, `bind_inactive`, `check_spell_id`, `cleanup`, `cleanup_lesser_conduits` (+67 more)
@@ -5048,7 +5049,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/conduit/conduit_ward/transfer/transfer_of_ownership.py
 
-- source_sha256: `c2c3fe835b2821e2c4cdfded2cdac43364456f2637b916528e6b89a8f584c60d`
+- source_sha256: `6de6dccbdb595d40c545bce81fca1de78daa66a4edcd750ae5ae53e25596dbb8`
 - nodes: 2
 
 ### Nodes
@@ -5078,6 +5079,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - makes the owner stamp follow the lineage both ways (0.2.8246): the flip and _migrate_inactive_members stamp every member that carries a stamp onto the target through _restamp, which registers the stamp-back to the source first and, for a managed version whose pool the target store did not hold, the discard of the pool its stamp composed (_discard_composed_pool); a managed version's pool moves as a store row with its idle objects and count
   - moves a parked member that carries no owner stamp unstamped; since 0.2.8248 conjure stamps the versions staged before it, so that is only a member whose stamp raised at conjure (logged)
   - resolves a spell_id in two explicit steps - the spell that owns it, then the spell its index has active in the source Book (in the member's own Book for the target-side dependency check) - for its own spell handle (_resolve_spell, RuntimeError when that index has no active spell), the target-side dependency check (_deps_resolvable_on_target) and the owned-dependency sub-transfers (_transfer_owned_dependencies), so a parked Spell object never reaches a transfer (0.2.8253)
+  - keeps both Books' _spell_indexes_by_id beside their _spells in the flip and its rollback, under both Books' locks, so a meld by index id finds the index on its owner (#346, 0.2.8317)
 - owns_state: `source_conduit`, `target_conduit`, `spell`, `_preflight_summary`, `_change_control_manager`, `_incident_manager`, `_rollback_actions`
 - phases: `runtime`
 - public methods: `cleanup`, `execute`, `preflight`
@@ -5810,7 +5812,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/conduit/meld/meld.py
 
-- source_sha256: `1366e40cf630bc04c97dc3af82ea93480223ce29ad30f3c6649ddcef1314f179`
+- source_sha256: `b4a453700838027d0b4d60f29d49232bee39fe9644110142e35ace280c1f49fa`
 - nodes: 2
 
 ### Nodes
@@ -5853,6 +5855,8 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - answers the live-creation probe of a managed spell for both doors from its owner store's pool (_describe_managed_pool_status: live while the count is above 0, creation_count the count, storage scope managed_pool; 0 without a store or a pool) (0.2.8243)
   - before a spell compiles at a meld (_may_compile), and first in the deferred lane, refreshes each stale dependency its plan expands - socket targets and contracted providers, at their lineage's current version - with that dependency's owner Book under its rebuild window and lock, then resets its plan so its own next meld runs a full target pass; a broken or still-gated dependency raises SpellbookValidationError naming it (_refresh_stale_dependencies, _refresh_dependency_structure, 0.2.8250)
   - refuses a meld on another thread that reaches a spell an open late bind marked (_refuse_open_late_bind, one lock-free read of SpellSystemStates.late_bind_thread_ids): at both gate entries, per catch-up dependency, and per planned dependency when a compile follows the structural branch (_refuse_planned_late_binds); the binding thread passes, and the caller retries (#330, 0.2.8316)
+  - checks a meld that names its target by spell_index_id for the three doors that take it (_check_spell_index_id_call: another selector is a ValueError, a non-str id a TypeError) (#346, 0.2.8317)
+  - names a parked version's SpellIndex and the meld that reaches the index's active version when a spell_id meld misses a version its Book can see parked, own or borrowed (_missing_spell_id_error, built on the miss only, lock-free) (#346, 0.2.8317)
 - owns_state: `_input_resolution_cache`, `_change_control_manager_by_frame`, `_spell_compiler_system`, `_fast_meld_doors`, `_meld_hooks`, `_baseline_meld_hooks`, `_meld_hooks_modified`
 - phases: `runtime`, `cleanup`
 - public methods: `cleanup`, `describe_live_creation_status`, `has_live_creation`, `hooks_modified`, `meld`, `meld_existing_spell`, `purge`, `register_meld_hooks`, `set_meld_hooks`
@@ -5886,9 +5890,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - `melder.aether.conduit.meld.meld.Meld` creates `CreationContextRebuild`
 - `melder.aether.conduit.meld.meld.Meld` creates `SpellbookValidationError`
 - `melder.aether.conduit.meld.meld.Meld` creates `TypeError`
+- `melder.aether.conduit.meld.meld.Meld` creates `ValueError`
 - `melder.aether.conduit.meld.meld.Meld` creates `KeyError`
 - `melder.aether.conduit.meld.meld.Meld` creates `RuntimeError`
-- `melder.aether.conduit.meld.meld.Meld` creates `ValueError`
 - `melder.aether.conduit.meld.meld.Meld` creates `SpellCompilerSystem`
 - `melder.aether.conduit.meld.meld.Meld` creates `HookExecutionError`
 
@@ -5961,7 +5965,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/conduit/spell_space/spell_space.py
 
-- source_sha256: `c0f1f5864a1e9d142acc4582955dccb348c83ce9771d3067060ec9e08499979a`
+- source_sha256: `f2f1c5b5ee31713c215aa383d66a39b704b57e8b9e1e268d5a2bcf4a7b71bde8`
 - nodes: 2
 
 ### Nodes
@@ -5991,6 +5995,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - explicitly cleans its owned Meld runtime on permanent teardown to release callback references
   - leaves its thread stack without error when released or destroyed inside its own managed block
   - serves warm melds by id, by name and by class from its door's fast-door entries
+  - melds by spell_index_id after its released check: the owner conduit's Spellbook answers the index's active spell_id and the space melds it in its id lanes (_meld_by_spell_index_id) (#346, 0.2.8317)
 - owns_state: `_id`, `_owner_conduit_id`, `_meld`, `_creations`, `_owner_conduit_creations`, `_spellspace_pool`, `_spellspace_stack_state`, `_released`
 - phases: `runtime`, `cleanup`
 - public methods: `cleanup`, `id`, `meld`, `owner_conduit_id`, `permanent_cleanup`, `purge`, `recycle_from_managed_context`
@@ -6619,7 +6624,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spell.py
 
-- source_sha256: `1f621475437148ec561a1e6215a96ef5b3f0c09cf809e58ac821fcbc51c14082`
+- source_sha256: `9f33998d1ecfff4341a5e58df980a399f603543c9bb80df363184b951c86b6e1`
 - nodes: 2
 
 ### Nodes
@@ -15951,7 +15956,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 
 ## src/melder/aether/spellbook/spellbook.py
 
-- source_sha256: `469b6f5a3bfba1b44abf0412375f69e8a723e665d72c9ce427e843021765133a`
+- source_sha256: `e8ab547add6d062d47d514c375f8204337c7bd3d916e23105f51ee931569907a`
 - nodes: 2
 
 ### Nodes
@@ -16009,7 +16014,9 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
   - marks a bind after conjure before publishing it: pins its validation flag up (_pending_late_bind_spell_ids, read by _set_spellbook_validation_required), registers the lineage with the binding thread's id, then publishes the Book maps (#330, 0.2.8316)
   - undoes a bind window whose commit the structural validator refused (_unwind_refused_bind_window, called by ChangeControlManager's default abort hook with the window's claims held): each late bind and parked mate leaves every registry, a filed existing-object slot is forgotten undisposed, a composed managed pool is discarded, the consumers refused because of the window are re-gated, and the refusal gains a note; every step is best-effort and logged (#330, 0.2.8316)
   - ends every bind window in end_transaction's finally (_end_bind_window): clears the late-bind marks still registered, the window's bookkeeping and the flag pin, and has the RiskManager recompute the flag (#330, 0.2.8316)
-- owns_state: `_bind`, `_spells`, `_spells_by_id`, `_lookup_spells`, `_contracted_spells`, `_configuration`, `_conduit`, `_pending_late_bind_spell_ids`, `_pending_inactive_spells`, `_pending_composed_pool_ids`, `_pending_registered_slot_keys`
+  - keeps its own indexes by id in _spell_indexes_by_id, exactly the keys of _spells, written beside every _spells write under its lock (bind, the notch's park and promotion, removal, index destruction, the unwind, teardown; the ownership transfer writes it for both Books) (#346, 0.2.8317)
+  - answers a meld by index id with the spell_id of the version the index has active (_selected_spell_id_for_index_id: one lock-free read of _spell_indexes_by_id, then of _contracted_indexes), and an id it cannot answer with a KeyError naming the index's parked versions when it holds only those (_unknown_spell_index_id_error) (#346, 0.2.8317)
+- owns_state: `_bind`, `_spells`, `_spells_by_id`, `_lookup_spells`, `_contracted_spells`, `_configuration`, `_conduit`, `_pending_late_bind_spell_ids`, `_pending_inactive_spells`, `_pending_composed_pool_ids`, `_pending_registered_slot_keys`, `_spell_indexes_by_id`
 - phases: `init`, `validation`, `runtime`, `cleanup`
 - public methods: `add_bind_hooks`, `begin_transaction`, `bind`, `bind_inactive`, `cleanup`, `cleanup_and_remove_spell`, `cleanup_spell`, `clear_bind_hooks`, `conduit`, `configure_aether_frame`, `conjure`, `contracted_spells` (+17 more)
 
@@ -16054,7 +16061,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - `melder.aether.spellbook.spellbook.Spellbook` -> `melder.mutation_research.mutation_research.MutationResearch`: The bind, bind_inactive, and notch confirmation seams auto-record world-entry/staged/promoted research events through a non-constructing peek at the Aether-hosted root (quiet no-op while research is inactive); a notch's promotion is recorded by its entry once the notch stands, so a refused notch records nothing (0.2.8262).
 - `melder.aether.spellbook.spellbook.Spellbook` -> `melder.aether.spellbook.spell_compiler.phases.compiler_phase_3.CompilerPhase3`: _add_contracted_spell reads CompilerPhase3._hidden_type_key for the copy it grants.
 
-### Edge candidates (15, unconfirmed)
+### Edge candidates (16, unconfirmed)
 
 Instantiation guesses from the AST. Over-generated roughly 8x against the reference graph; confirm or drop before relying on them.
 
@@ -16065,6 +16072,7 @@ Instantiation guesses from the AST. Over-generated roughly 8x against the refere
 - `melder.aether.spellbook.spellbook.Spellbook` creates `Bind`
 - `melder.aether.spellbook.spellbook.Spellbook` creates `MappingProxyType`
 - `melder.aether.spellbook.spellbook.Spellbook` creates `RuntimeError`
+- `melder.aether.spellbook.spellbook.Spellbook` creates `KeyError`
 - `melder.aether.spellbook.spellbook.Spellbook` creates `Scan`
 - `melder.aether.spellbook.spellbook.Spellbook` creates `Spellbook`
 - `melder.aether.spellbook.spellbook.Spellbook` creates `TypeError`

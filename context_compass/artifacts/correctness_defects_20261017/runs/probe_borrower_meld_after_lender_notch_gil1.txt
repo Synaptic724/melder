@@ -1,0 +1,16 @@
+C:\Users\Mark\AppData\Local\Temp\claude\d719220bfde2ecb3\3de7e697-101b-4c94-88cd-62df084a6db9\scratchpad\base\src\melder\__init__.py:199: UserWarning: Python 3.14+ detected, but running in GIL-enabled mode.
+melder is optimized for Python built with --disable-gil (PEP 703).
+Performance may be degraded.
+  warnings.warn(
+by_id: the borrower melds version 1 before the notch: version 1
+by_id: after the notch, validation_required - lender Book True, borrower Book False
+by_id: the borrower's meld raised RuntimeError: Cannot build CreationContext before spell_codegen_creation exists. Run analyzer -> processor -> planner -> codegen creation first.
+by_class: the borrower melds version 1 before the notch: version 1
+by_class: after the notch, validation_required - lender Book True, borrower Book False
+by_class: the borrower's meld raised RuntimeError: Cannot build CreationContext before spell_codegen_creation exists. Run analyzer -> processor -> planner -> codegen creation first.
+by_name: the borrower melds version 1 before the notch: version 1
+by_name: after the notch, validation_required - lender Book True, borrower Book False
+by_name: the borrower's meld raised RuntimeError: Cannot build CreationContext before spell_codegen_creation exists. Run analyzer -> processor -> planner -> codegen creation first.
+lender_first: the borrower melds version 1 before the notch: version 1
+lender_first: after the notch, validation_required - lender Book True, borrower Book False
+lender_first: the borrower builds version 2
